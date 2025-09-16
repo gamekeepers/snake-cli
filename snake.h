@@ -92,7 +92,11 @@ void game_play()
     deque<pair<int, int>> snake;
     snake.push_back(make_pair(0, 0));
 
-    pair<int, int> food = make_pair(rand() % 10, rand() % 10);
+    pair<int, int> food;
+    do
+    {
+        food = make_pair(rand() % 10, rand() % 10);
+    } while (find(snake.begin(), snake.end(), food) != snake.end());
     for (pair<int, int> head = make_pair(0, 1);; head = get_next_head(head, direction))
     {
         // send the cursor to the top
@@ -107,7 +111,10 @@ void game_play()
         else if (head.first == food.first && head.second == food.second)
         {
             // grow snake
-            food = make_pair(rand() % 10, rand() % 10);
+            do
+            {
+                food = make_pair(rand() % 10, rand() % 10);
+            } while (find(snake.begin(), snake.end(), food) != snake.end());
             snake.push_back(head);
             if (sleep_time > 100)
             {
