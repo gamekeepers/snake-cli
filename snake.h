@@ -13,6 +13,8 @@ using std::chrono::system_clock;
 using namespace std::this_thread;
 
 char direction='r';
+
+vector<int> high_scores; 
 bool paused = false;
 void input_handler(){
     // change terminal settings
@@ -73,6 +75,19 @@ pair<int,int> get_next_head(pair<int,int> current, char direction){
     return next;
 }
 
+void update_and_show_scores(int score) {
+    high_scores.push_back(score);
+    sort(high_scores.begin(), high_scores.end(), greater<int>());
+    if (high_scores.size() > 10) {
+        high_scores.resize(10);
+    }
+    cout << "\n=== Top 10 High Scores ===" << endl;
+    for (size_t i = 0; i < high_scores.size(); i++) {
+        cout << i + 1 << ". " << high_scores[i] << endl;
+    }
+    cout << "===========================" << endl;
+}
+
 void game_play() {
     system("clear");
     deque<pair<int, int>> snake;
@@ -100,6 +115,7 @@ void game_play() {
             system("clear");
             cout << "Game Over - You ran into yourself!" << endl;
             cout << "Final Score: " << score << endl;
+             update_and_show_scores(score);
             exit(0);
         } 
         // check poison collision
@@ -107,6 +123,7 @@ void game_play() {
             system("clear");
             cout << "Game Over - You ate poison!" << endl;
             cout << "Final Score: " << score << endl;
+            update_and_show_scores(score);
             exit(0);
         } 
         // check food collision
