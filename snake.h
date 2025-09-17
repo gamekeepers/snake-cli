@@ -8,6 +8,7 @@
 #include <map>
 #include <deque>
 #include <algorithm>
+#include <fstream>
 using namespace std;
 using std::chrono::system_clock;
 using namespace std::this_thread;
@@ -66,11 +67,39 @@ pair<int,int> get_next_head(pair<int,int> current, char direction){
         next = make_pair(current.first, current.second==0?9:current.second-1);
     }else if(direction =='d'){
             next = make_pair((current.first+1)%10,current.second);
-        }else if (direction=='u'){
-            next = make_pair(current.first==0?9:current.first-1, current.second);
-        }
+    }else if (direction=='u'){
+        next = make_pair(current.first==0?9:current.first-1, current.second);        
+    }
     return next;
     
+}
+
+void update_highscores(int score){
+    vector<int> scores;
+    ifstream infile("highscores.txt");
+    int s;
+    while(infile >> s){
+        scores.push_back(s);
+    }
+    infile.close();
+
+    scores.push_back(score);
+    sort(scores.begin(), scores.end(), greater<int>());
+
+    if(scores.size() > 10){
+        scores.resize(10);
+    }
+
+    ofstream outfile("highscores.txt");
+    for(int sc : scores){
+        outfile << sc << endl;
+    }
+    outfile.close();
+
+    cout << "\n🏆 Top 10 High Scores 🏆" << endl;
+    for(size_t i = 0;i < scores.size();i++){
+        cout << i+1 << ". " << scores[i] << endl;
+    }
 }
 
 
@@ -109,6 +138,7 @@ void game_play(){
             system("clear");
             cout << "Game Over! You ate yourself 🐍" << endl;
             cout << "Final Score: " << score << endl;
+            update_highscores(score);
             exit(0);
         }else if (head.first == food.first && head.second == food.second) {
             // grow snake
@@ -123,6 +153,7 @@ void game_play(){
             system("clear");
             cout << "Game Over! You ate poison ☠️" << endl;
             cout << "Final Score: " << score << endl;
+            update_highscores(score);
             exit(0);
         }else{
             // move snake
