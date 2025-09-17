@@ -104,9 +104,9 @@ void game_play(){
            // grow snake
             food = generate_food(10, snake);
             snake.push_back(head);  
-            score++;  
+            score += 10;
 
-           speed = calculate_speed(score);         
+           speed = calculate_speed(score/10);         
         }else{
             // move snake
             snake.push_back(head);
@@ -114,7 +114,8 @@ void game_play(){
         }
         render_game(10, snake, food);
         cout << "length of snake: " << snake.size() << endl;
-    
+        cout << "score: " << score << endl;
+
         sleep_for(std::chrono::milliseconds(speed));
     }
 }
