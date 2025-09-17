@@ -85,6 +85,7 @@ void game_play(){
 
     pair<int, int> food = generate_food(snake);
 
+    int score = 0;
     int foodEaten = 0;
     int speed = 500;
     
@@ -95,12 +96,14 @@ void game_play(){
         if (find(snake.begin(), snake.end(), head) != snake.end()) {
             system("clear");
             cout << "Game Over" << endl;
+            cout << "Final Score: " << score << endl;
             exit(0);
         }else if (head.first == food.first && head.second == food.second) {
             // grow snake
             food = generate_food(snake);
             snake.push_back(head);
             foodEaten++;
+            score += 10;
 
             if(foodEaten%10 == 0 && speed > 100){ speed -= 50; }
         }else{
@@ -109,6 +112,7 @@ void game_play(){
             snake.pop_front();
         }
         render_game(10, snake, food);
+        cout << "Score: " << score << endl;
         cout << "length of snake: " << snake.size() << endl;
         cout << "Speed: " << speed << "ms" << endl;
     
