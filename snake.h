@@ -12,6 +12,7 @@ using namespace std;
 using std::chrono::system_clock;
 using namespace std::this_thread;
 char direction='r';
+bool paused = false;
 
 
 void input_handler(){
@@ -28,6 +29,8 @@ void input_handler(){
         if (keymap.find(input) != keymap.end()) {
             // This now correctly modifies the single, shared 'direction' variable
             direction = keymap[input];
+        }else if (input == 'p') {
+            paused = !paused;
         }else if (input == 'q'){
             exit(0);
         }
@@ -95,6 +98,12 @@ void game_play(){
     for(pair<int, int> head=make_pair(0,1);; head = get_next_head(head, direction)){
         // send the cursor to the top
         cout << "\033[H";
+
+        if(paused){
+            cout << "Game Paused - Press 'p' to Resume" << endl;
+            sleep_for(200ms);
+            continue;
+        }
         // check self collision
         if (find(snake.begin(), snake.end(), head) != snake.end()) {
             system("clear");
