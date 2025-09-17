@@ -49,6 +49,43 @@ TEST(SnakeBehaviour, ScoreIncreasesBy10)
   EXPECT_EQ(score, 20);
 }
 
+// Test to ensure poison never overlaps with food or snake
+TEST(SnakeBehaviour, PoisonNotOnFoodOrSnake)
+{
+  int size = 10;
+  deque<pair<int, int>> snake = {{0, 0}, {0, 1}, {0, 2}};
+
+  for (int i = 0; i < 100; i++)
+  {
+    auto food = generate_food(size, snake);
+    auto poison = generate_food(size, snake, food);
+
+    // Poison must not overlap with food
+    EXPECT_NE(poison, food) << "Poison spawned on food!";
+
+    // Poison must not overlap with snake
+    EXPECT_EQ(find(snake.begin(), snake.end(), poison), snake.end())
+        << "Poison spawned on snake body!";
+  }
+}
+
+// Test to ensure poison changes only when food is eaten
+TEST(SnakeBehaviour, PoisonMovesWhenFoodEaten)
+{
+  int size = 10;
+  deque<pair<int, int>> snake = {{0, 0}, {0, 1}, {0, 2}};
+
+  auto food = generate_food(size, snake);
+  auto poison = generate_food(size, snake, food);
+
+  // Simulate eating food
+  auto newFood = generate_food(size, snake);
+  auto newPoison = generate_food(size, snake, newFood);
+
+  // After food is eaten, poison must move
+  EXPECT_NE(poison, newPoison) << "Poison did not move after food eaten!";
+}
+
 /**
  * g++ -o my_tests snake_test.cpp -lgtest -lgtest_main -pthread;
  * This command is a two-part shell command. Let's break it down.
