@@ -52,6 +52,9 @@ void render_game(int size, deque<pair<int, int>> &snake, pair<int, int> food){
 }
 }
 
+
+
+
 pair<int,int> get_next_head(pair<int,int> current, char direction){
     pair<int, int> next; 
     if(direction =='r'){
@@ -68,12 +71,20 @@ pair<int,int> get_next_head(pair<int,int> current, char direction){
     
 }
 
+pair<int,int> generate_food(int size, const deque<pair<int,int>> &snake) {
+    pair<int,int> food;
+    do {
+        food = make_pair(rand() % size, rand() % size);
+    } while (find(snake.begin(), snake.end(), food) != snake.end());
+    return food;
+}
 void game_play() {
     system("clear");
     deque<pair<int, int>> snake;
     snake.push_back(make_pair(0, 0));
 
-    pair<int, int> food = make_pair(rand() % 10, rand() % 10);
+    pair<int, int> food = generate_food(10, snake);
+
 
     int food_eaten = 0;   // count how many food items eaten
     int speed = 500;      // start speed in milliseconds
@@ -89,7 +100,8 @@ void game_play() {
             exit(0);
         } else if (head.first == food.first && head.second == food.second) {
             // grow snake
-            food = make_pair(rand() % 10, rand() % 10);
+            food = generate_food(10, snake);
+
             snake.push_back(head);
 
             food_eaten++;
