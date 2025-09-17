@@ -13,8 +13,9 @@ using std::chrono::system_clock;
 using namespace std::this_thread;
 
 char direction='r';
-vector<int> high_scores;
 
+vector<int> high_scores; 
+bool paused = false;
 void input_handler(){
     // change terminal settings
     struct termios oldt, newt;
@@ -23,15 +24,23 @@ void input_handler(){
     // turn off canonical mode and echo
     newt.c_lflag &= ~(ICANON | ECHO);
     tcsetattr(STDIN_FILENO, TCSANOW, &newt);
-    map<char, char> keymap = {{'d', 'r'}, {'a', 'l'}, {'w', 'u'}, {'s', 'd'}, {'q', 'q'}};
-    while (true) {
-        char input = getchar();
-        if (keymap.find(input) != keymap.end()) {
-            direction = keymap[input];
-        } else if (input == 'q'){
-            exit(0);
-        }
+   map<char, char> keymap = {
+    {'d', 'r'}, {'a', 'l'}, {'w', 'u'}, {'s', 'd'}, {'q', 'q'}
+};
+while (true) {
+    char input = getchar();
+
+    if (input == 'p') {
+        paused = !paused;  // toggle pause on/off
     }
+    else if (keymap.find(input) != keymap.end()) {
+        direction = keymap[input];
+    } 
+    else if (input == 'q') {
+        exit(0);
+    }
+}
+
     tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
 }
 
@@ -94,6 +103,13 @@ void game_play() {
     for (pair<int, int> head = make_pair(0, 1); ; head = get_next_head(head, direction)) {
         cout << "\033[H";
 
+        while (paused) {
+            cout << "\033[H"; // reset cursor
+            render_game(10, snake, food, poison);
+            cout << "\n==== PAUSED ====" << endl;
+            cout << "Press 'p' to resume..." << endl;
+            sleep_for(chrono::milliseconds(200));
+        }
         // check self collision
         if (find(snake.begin(), snake.end(), head) != snake.end()) {
             system("clear");
