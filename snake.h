@@ -13,6 +13,7 @@ using std::chrono::system_clock;
 using namespace std::this_thread;
 char direction='r';
 int score = 0; // New global variable for the score
+pair<int, int> poisonous_food; // New global variable for poisonous food
 
 
 void input_handler(){
@@ -43,9 +44,11 @@ void render_game(int size, deque<pair<int, int>> &snake, pair<int, int> food){
         for(size_t j=0;j<size;j++){
             if (i == food.first && j == food.second){
                 cout << "🍎";
-            }else if (find(snake.begin(), snake.end(), make_pair(int(i), int(j))) != snake.end()) {
+            } else if (i == poisonous_food.first && j == poisonous_food.second) {
+                cout << "💀"; // Render the poisonous food
+            } else if (find(snake.begin(), snake.end(), make_pair(int(i), int(j))) != snake.end()) {
                 cout << "🐍";
-            }else{
+            } else {
                 cout << "⬜";
             }
     }
@@ -85,6 +88,12 @@ void game_play(){
     // Initial sleep duration (500ms)
     chrono::milliseconds sleep_duration(500); 
 
+    // Spawn poisonous food in a free spot, not on the snake or the normal food
+    do {
+        poisonous_food = make_pair(rand() % 10, rand() % 10);
+    } while (find(snake.begin(), snake.end(), poisonous_food) != snake.end() || (poisonous_food.first == food.first && poisonous_food.second == food.second));
+
+
     for(pair<int, int> head=make_pair(0,1);; head = get_next_head(head, direction)){
         // send the cursor to the top
         cout << "\033[H";
@@ -93,12 +102,17 @@ void game_play(){
             system("clear");
             cout << "Game Over" << endl;
             exit(0);
-        }else if (head.first == food.first && head.second == food.second) {
+        } else if (head.first == poisonous_food.first && head.second == poisonous_food.second) {
+            // New check for poisonous food
+            system("clear");
+            cout << "Game Over - You ate poisonous food!" << endl;
+            exit(0);
+        } else if (head.first == food.first && head.second == food.second) {
             // grow snake
             // Regenerate food in a new, free spot
             do {
                 food = make_pair(rand() % 10, rand() % 10);
-            } while (find(snake.begin(), snake.end(), food) != snake.end());
+            } while (find(snake.begin(), snake.end(), food) != snake.end() || (food.first == poisonous_food.first && food.second == poisonous_food.second));
 
             snake.push_back(head);
             score += 10; // Increase score when food is eaten
@@ -107,7 +121,7 @@ void game_play(){
             if (sleep_duration.count() > 50) {
                 sleep_duration = chrono::milliseconds(sleep_duration.count() - 10);
             }
-        }else{
+        } else {
             // move snake
             snake.push_back(head);
             snake.pop_front();
