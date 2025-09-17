@@ -36,6 +36,15 @@ void input_handler(){
     tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
 }
 
+pair<int, int> generate_food(int size, const deque<pair<int, int>>& snake) {
+    while (true) {
+        pair<int, int> food = make_pair(rand() % size, rand() % size);
+        if (find(snake.begin(), snake.end(), food) == snake.end()) {
+            return food; // valid food not colliding with snake
+        }
+    }
+}
+
 
 void render_game(int size, deque<pair<int, int>> &snake, pair<int, int> food){
     for(size_t i=0;i<size;i++){
@@ -68,6 +77,10 @@ pair<int,int> get_next_head(pair<int,int> current, char direction){
     
 }
 
+int calculate_speed(int score, int base_speed = 500, int min_speed = 100, int step = 50) {
+    int reduced = base_speed - (score / 10) * step;
+    return max(min_speed, reduced);
+}
 
 
 void game_play(){
@@ -78,7 +91,7 @@ void game_play(){
     deque<pair<int, int>> snake;
     snake.push_back(make_pair(0,0));
 
-    pair<int, int> food = make_pair(rand() % 10, rand() % 10);
+    pair<int, int> food = generate_food(10, snake);
     for(pair<int, int> head=make_pair(0,1);; head = get_next_head(head, direction)){
         // send the cursor to the top
         cout << "\033[H";
@@ -89,13 +102,11 @@ void game_play(){
             exit(0);
         }else if (head.first == food.first && head.second == food.second) {
            // grow snake
-            food = make_pair(rand() % 10, rand() % 10);
+            food = generate_food(10, snake);
             snake.push_back(head);  
             score++;  
 
-            if (score % 10 == 0 && speed > 100) { // cap at 100ms for playability
-                speed -= 50; // increase speed
-            }          
+           speed = calculate_speed(score);         
         }else{
             // move snake
             snake.push_back(head);
