@@ -12,6 +12,7 @@ using namespace std;
 using std::chrono::system_clock;
 using namespace std::this_thread;
 char direction='r';
+int score = 0; // New global variable for the score
 
 
 void input_handler(){
@@ -100,6 +101,7 @@ void game_play(){
             } while (find(snake.begin(), snake.end(), food) != snake.end());
 
             snake.push_back(head);
+            score += 10; // Increase score when food is eaten
             // Decrease the sleep duration by 10ms for every food eaten
             // Ensure the sleep duration doesn't drop below 50ms
             if (sleep_duration.count() > 50) {
@@ -112,6 +114,7 @@ void game_play(){
         }
         render_game(10, snake, food);
         cout << "length of snake: " << snake.size() << endl;
+        cout << "Score: " << score << endl; // Display the current score
     
         // Use the dynamic sleep duration
         sleep_for(sleep_duration);
