@@ -1,33 +1,31 @@
 #include <gtest/gtest.h>
 #include "snake.h"
 
-
-TEST(SnakeBehaviour, NextHeadRight) {
-    pair<int, int> current = make_pair(rand() % 10, rand() % 10);
-    EXPECT_EQ(get_next_head(current, 'r'),make_pair(current.first,current.second+1));
-    
-}
-
-
-TEST(SnakeBehaviour, NextHeadLeft) {
+TEST(SnakeBehaviour, NextHeadRight)
+{
   pair<int, int> current = make_pair(rand() % 10, rand() % 10);
-  EXPECT_EQ(get_next_head(current, 'l'),make_pair(current.first,current.second-1));
-  
+  EXPECT_EQ(get_next_head(current, 'r'), make_pair(current.first, current.second + 1));
 }
 
-TEST(SnakeBehaviour, NextHeadUp) {
+TEST(SnakeBehaviour, NextHeadLeft)
+{
   pair<int, int> current = make_pair(rand() % 10, rand() % 10);
-  EXPECT_EQ(get_next_head(current, 'u'),make_pair(current.first-1,current.second));
+  EXPECT_EQ(get_next_head(current, 'l'), make_pair(current.first, current.second - 1));
 }
 
-TEST(SnakeBehaviour, NextHeadDown) {
+TEST(SnakeBehaviour, NextHeadUp)
+{
   pair<int, int> current = make_pair(rand() % 10, rand() % 10);
-  EXPECT_EQ(get_next_head(current, 'd'),make_pair(current.first+1,current.second));
-  
+  EXPECT_EQ(get_next_head(current, 'u'), make_pair(current.first - 1, current.second));
 }
 
+TEST(SnakeBehaviour, NextHeadDown)
+{
+  pair<int, int> current = make_pair(rand() % 10, rand() % 10);
+  EXPECT_EQ(get_next_head(current, 'd'), make_pair(current.first + 1, current.second));
+}
 
-/** 
+/**
  * g++ -o my_tests snake_test.cpp -lgtest -lgtest_main -pthread;
  * This command is a two-part shell command. Let's break it down.
 
@@ -45,5 +43,5 @@ TEST(SnakeBehaviour, NextHeadDown) {
      Test, which saves you from writing your own main() to run the tests.
    * -pthread: This links the POSIX threads library, which is required by Google
      Test for its operation.
- * 
+ *
 */
