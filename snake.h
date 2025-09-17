@@ -13,6 +13,7 @@ using std::chrono::system_clock;
 using namespace std::this_thread;
 
 char direction = 'r';
+bool paused = false; // new pause flag
 
 void input_handler()
 {
@@ -32,6 +33,14 @@ void input_handler()
     while (true)
     {
         char c1 = getchar();
+
+        // Toggle pause with 'p'
+        if (c1 == 'p' || c1 == 'P')
+        {
+            paused = !paused;
+            continue;
+        }
+
         if (c1 == '\x1b')
         {
             char c2 = getchar();
@@ -124,6 +133,14 @@ void game_play()
     {
         cout << "\033[H";
 
+        // === Pause handling ===
+        if (paused)
+        {
+            cout << "=== GAME PAUSED ===\nPress 'p' to resume.\n";
+            sleep_for(chrono::milliseconds(200));
+            continue; // skip rest of loop until resumed
+        }
+
         // collision with self
         if (find(snake.begin(), snake.end(), head) != snake.end())
         {
@@ -165,7 +182,9 @@ void game_play()
         render_game(10, snake, food, poison);
         cout << "Length: " << snake.size()
              << " | Speed: " << game_speed << "ms"
-             << " | Score: " << score << "\n";
+             << " | Score: " << score
+             << " | Press 'p' to Pause/Resume"
+             << "\n";
 
         sleep_for(chrono::milliseconds(game_speed));
     }
