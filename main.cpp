@@ -2,7 +2,7 @@
 #include <ctime>
 
 int main(int argc, char *argv[]) {
-    srand((unsigned)time(nullptr)); // seed RNG for food placement
+    srand((unsigned)time(nullptr)); // seed RNG for food placements
 
     // start input and game threads
     thread input_thread(input_handler);

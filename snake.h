@@ -4,7 +4,7 @@
 #include <thread>
 #include <stdlib.h>
 #include <termios.h>
-#include <unistd.h> // for system clear
+#include <unistd.h> // for system clearing
 #include <map>
 #include <deque>
 #include <algorithm>
