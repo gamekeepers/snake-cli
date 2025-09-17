@@ -8,12 +8,34 @@
 #include <map>
 #include <deque>
 #include <algorithm>
+#include <fstream>
+
 using namespace std;
 using std::chrono::system_clock;
 using namespace std::this_thread;
 char direction='r';
-
+vector<int> top_scores;
 bool paused = false;  // global flag
+void load_top_scores() {
+    ifstream infile("top_scores.txt");
+    int s;
+    top_scores.clear();
+    while (infile >> s) {
+        top_scores.push_back(s);
+    }
+    infile.close();
+    sort(top_scores.rbegin(), top_scores.rend()); // sort descending
+    if (top_scores.size() > 10) top_scores.resize(10); // keep top 10 only
+}
+
+void save_top_scores() {
+    ofstream outfile("top_scores.txt");
+    for (int s : top_scores) {
+        outfile << s << endl;
+    }
+    outfile.close();
+}
+
 void input_handler(){
     // change terminal settings
     struct termios oldt, newt;
@@ -97,6 +119,8 @@ pair<int,int> generate_poison(int size, const deque<pair<int,int>> &snake, pair<
 }
 
 void game_play() {
+    load_top_scores();
+
     system("clear");
     deque<pair<int, int>> snake;
     snake.push_back(make_pair(0, 0));
@@ -129,16 +153,39 @@ while (true) {
     head = get_next_head(head, direction);
 
     // check self collision
-    if (find(snake.begin(), snake.end(), head) != snake.end()) {
-        system("clear");
-        cout << "Game Over" << endl;
-        exit(0);
-    } 
-    else if (head == poison) {
-        system("clear");
-        cout << "Game Over ( Snake ate poison ☠️ )" << endl;
-        exit(0);
-    }
+//   ding order
+ if (find(snake.begin(), snake.end(), head) != snake.end()) {
+    system("clear");
+
+    // Update top scores and save
+    top_scores.push_back(score);
+    sort(top_scores.rbegin(), top_scores.rend()); // descending
+    if (top_scores.size() > 10) top_scores.resize(10);
+    save_top_scores();
+
+    cout << "Game Over! Snake hit itself." << endl;
+    cout << "Top 10 Scores:" << endl;
+    for (int s : top_scores) cout << s << endl;
+
+    exit(0);
+} 
+else if (head == poison) {
+    system("clear");
+
+    // Update top scores and save
+    top_scores.push_back(score);
+    sort(top_scores.rbegin(), top_scores.rend()); // descending
+    if (top_scores.size() > 10) top_scores.resize(10);
+    save_top_scores();
+
+    cout << "Game Over! Snake ate poison ☠️." << endl;
+    cout << "Top 10 Scores:" << endl;
+    for (int s : top_scores) cout << s << endl;
+
+    exit(0);
+}
+
+
     else if (head.first == food.first && head.second == food.second) {
         // grow snake
         food = generate_food(10, snake);
