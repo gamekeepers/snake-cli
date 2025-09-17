@@ -70,40 +70,42 @@ pair<int,int> get_next_head(pair<int,int> current, char direction){
 
 
 
-void game_play(){
+void game_play() {
     system("clear");
     deque<pair<int, int>> snake;
-    snake.push_back(make_pair(0,0));
+    snake.push_back(make_pair(0, 0));
 
     pair<int, int> food = make_pair(rand() % 10, rand() % 10);
-    int food_count=0;
-    int speed=500;
-    for(pair<int, int> head=make_pair(0,1);; head = get_next_head(head, direction)){
-        // send the cursor to the top
+    int food_count = 0;
+    int speed = 500;
+    int score = 0; // Score tracking
+
+    for (pair<int, int> head = make_pair(0, 1); ; head = get_next_head(head, direction)) {
         cout << "\033[H";
-        // check self collision
+
         if (find(snake.begin(), snake.end(), head) != snake.end()) {
             system("clear");
             cout << "Game Over" << endl;
+            cout << "Final Score: " << score << endl;
             exit(0);
-        }else if (head.first == food.first && head.second == food.second) {
-            // grow snake
-            food = make_pair(rand() % 10, rand() % 10);
+        } else if (head.first == food.first && head.second == food.second) {
             snake.push_back(head);
             food_count++;
-            if(food_count%10==0 && speed>100)
-            {
-                speed-=50;
-            }
+            score += 10; // Increment score per food
+            food = make_pair(rand() % 10, rand() % 10);
 
-        }else{
-            // move snake
+            if (food_count % 10 == 0 && speed > 100) {
+                speed -= 50;
+            }
+        } else {
             snake.push_back(head);
             snake.pop_front();
         }
+
         render_game(10, snake, food);
-        cout << "length of snake: " << snake.size() << endl;
-    
+        cout << "Length of snake: " << snake.size() << " | Score: " << score << endl;
+
         sleep_for(chrono::milliseconds(speed));
     }
 }
+
