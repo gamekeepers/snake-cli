@@ -12,7 +12,7 @@ using namespace std;
 using std::chrono::system_clock;
 using namespace std::this_thread;
 char direction='r';
-
+bool paused = false; // pause/resume flag
 
 void input_handler(){
     // change terminal settings
@@ -22,16 +22,19 @@ void input_handler(){
     // turn off canonical mode and echo
     newt.c_lflag &= ~(ICANON | ECHO);
     tcsetattr(STDIN_FILENO, TCSANOW, &newt);
-    map<char, char> keymap = {{'d', 'r'}, {'a', 'l'}, {'w', 'u'}, {'s', 'd'}, {'q', 'q'}};
+    map<char, char> keymap = {{'d', 'r'}, {'a', 'l'}, {'w', 'u'}, {'s', 'd'}, {'q', 'q'}, {'p','p'}};
     while (true) {
         char input = getchar();
         if (keymap.find(input) != keymap.end()) {
-            // This now correctly modifies the single, shared 'direction' variable
-            direction = keymap[input];
+            if(input == 'p') {
+                paused = !paused; // toggle pause
+            } else {
+                // update direction
+                direction = keymap[input];
+            }
         }else if (input == 'q'){
             exit(0);
         }
-        // You could add an exit condition here, e.g., if (input == 'q') break;
     }
     tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
 }
@@ -44,7 +47,6 @@ pair<int, int> generate_food(int size, const deque<pair<int, int>>& snake, pair<
         }
     }
 }
-
 
 void render_game(int size, deque<pair<int, int>> &snake, pair<int, int> food, pair<int,int> poison){
     for(size_t i=0;i<size;i++){
@@ -100,6 +102,13 @@ void game_play(){
     for(pair<int, int> head=make_pair(0,1);; head = get_next_head(head, direction)){
         // send the cursor to the top
         cout << "\033[H";
+
+        if(paused) {
+            cout << "Game Paused. Press 'p' to resume." << endl;
+            sleep_for(std::chrono::milliseconds(200));
+            continue; // skip game update while paused
+        }
+
         // check self collision
         if (find(snake.begin(), snake.end(), head) != snake.end()) {
             system("clear");
