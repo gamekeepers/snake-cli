@@ -107,6 +107,11 @@ pair<int, int> generate_food(int size, const deque<pair<int, int>> &snake)
     }
 }
 
+int update_score(int current_score)
+{
+    return current_score + 10;
+}
+
 void game_play()
 {
     system("clear");
@@ -115,6 +120,7 @@ void game_play()
 
     pair<int, int> food = generate_food(10, snake);
     int game_speed = 200;
+    int score = 0; // 🟢 track score
 
     for (pair<int, int> head = make_pair(0, 1);; head = get_next_head(head, direction))
     {
@@ -125,6 +131,7 @@ void game_play()
         {
             system("clear");
             cout << "Game Over\n";
+            cout << "Final Score: " << score << "\n";
             exit(0);
         }
         // food eaten
@@ -132,6 +139,8 @@ void game_play()
         {
             snake.push_back(head);
             food = generate_food(10, snake);
+
+            score += 10; // 🟢 increase score
 
             if (game_speed > 100)
                 game_speed -= 20;
@@ -143,7 +152,9 @@ void game_play()
         }
 
         render_game(10, snake, food);
-        cout << "Length: " << snake.size() << " | Speed: " << game_speed << "ms\n";
+        cout << "Length: " << snake.size()
+             << " | Speed: " << game_speed << "ms"
+             << " | Score: " << score << "\n";
 
         sleep_for(chrono::milliseconds(game_speed));
     }

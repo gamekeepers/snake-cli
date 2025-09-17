@@ -39,6 +39,16 @@ TEST(SnakeBehaviour, FoodNotInSnake)
   }
 }
 
+TEST(SnakeBehaviour, ScoreIncreasesBy10)
+{
+  int score = 0;
+  score = update_score(score);
+  EXPECT_EQ(score, 10);
+
+  score = update_score(score);
+  EXPECT_EQ(score, 20);
+}
+
 /**
  * g++ -o my_tests snake_test.cpp -lgtest -lgtest_main -pthread;
  * This command is a two-part shell command. Let's break it down.
