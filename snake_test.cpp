@@ -25,6 +25,20 @@ TEST(SnakeBehaviour, NextHeadDown)
   EXPECT_EQ(get_next_head(current, 'd'), make_pair(current.first + 1, current.second));
 }
 
+// Test to ensure food never spawns inside the snake
+TEST(SnakeBehaviour, FoodNotInSnake)
+{
+  deque<pair<int, int>> snake = {{0, 0}, {0, 1}, {0, 2}};
+  int size = 10;
+
+  for (int i = 0; i < 100; i++)
+  {
+    auto food = generate_food(size, snake);
+    EXPECT_EQ(find(snake.begin(), snake.end(), food), snake.end())
+        << "Food spawned inside snake body!";
+  }
+}
+
 /**
  * g++ -o my_tests snake_test.cpp -lgtest -lgtest_main -pthread;
  * This command is a two-part shell command. Let's break it down.
