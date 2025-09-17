@@ -88,6 +88,7 @@ void game_play() {
 
     int food_eaten = 0;   // count how many food items eaten
     int speed = 500;      // start speed in milliseconds
+    int score = 0;        // for tracking of the score
 
     for (pair<int, int> head = make_pair(0, 1);; head = get_next_head(head, direction)) {
         // send the cursor to the top
@@ -105,8 +106,8 @@ void game_play() {
             snake.push_back(head);
 
             food_eaten++;
-
-           
+            score+=10;
+          
             if (food_eaten % 10 == 0 && speed > 100) {
                 speed += 50;  
             }
@@ -118,6 +119,8 @@ void game_play() {
 
         render_game(10, snake, food);
         cout << "length of snake: " << snake.size() << endl;
+        cout << "Score: " << score << endl;
+
         cout << "food eaten: " << food_eaten << " | current speed: " << speed << "ms" << endl;
 
         sleep_for(std::chrono::milliseconds(speed));
