@@ -5,5 +5,5 @@ int main(int argc, char *argv[]) {
     thread game_thread(game_play);   
     input_thread.join();
     game_thread.join();
-return 0;
+    return 0;
 }
