@@ -71,6 +71,9 @@ pair<int,int> get_next_head(pair<int,int> current, char direction){
 
 
 void game_play(){
+    int score = 0;
+    int speed = 500; // in ms, initial speed
+
     system("clear");
     deque<pair<int, int>> snake;
     snake.push_back(make_pair(0,0));
@@ -85,9 +88,14 @@ void game_play(){
             cout << "Game Over" << endl;
             exit(0);
         }else if (head.first == food.first && head.second == food.second) {
-            // grow snake
+           // grow snake
             food = make_pair(rand() % 10, rand() % 10);
-            snake.push_back(head);            
+            snake.push_back(head);  
+            score++;  
+
+            if (score % 10 == 0 && speed > 100) { // cap at 100ms for playability
+                speed -= 50; // increase speed
+            }          
         }else{
             // move snake
             snake.push_back(head);
@@ -96,6 +104,6 @@ void game_play(){
         render_game(10, snake, food);
         cout << "length of snake: " << snake.size() << endl;
     
-        sleep_for(500ms);
+        sleep_for(std::chrono::milliseconds(speed));
     }
 }
