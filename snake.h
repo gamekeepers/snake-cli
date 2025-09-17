@@ -75,7 +75,15 @@ void game_play(){
     deque<pair<int, int>> snake;
     snake.push_back(make_pair(0,0));
 
-    pair<int, int> food = make_pair(rand() % 10, rand() % 10);
+    auto generate_food = [&](deque<pair<int, int>> &snake) {
+        pair<int, int> newFood;
+        do {
+            newFood = make_pair(rand() % 10, rand() % 10);
+        } while (find(snake.begin(), snake.end(), newFood) != snake.end());
+        return newFood;
+    };
+
+    pair<int, int> food = generate_food(snake);
 
     int foodEaten = 0;
     int speed = 500;
@@ -90,7 +98,7 @@ void game_play(){
             exit(0);
         }else if (head.first == food.first && head.second == food.second) {
             // grow snake
-            food = make_pair(rand() % 10, rand() % 10);
+            food = generate_food(snake);
             snake.push_back(head);
             foodEaten++;
 
