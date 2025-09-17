@@ -40,11 +40,13 @@ void input_handler() {
 }
 
 // render the board
-void render_game(int size, deque<pair<int,int>> &snake, pair<int,int> food, int score) {
+void render_game(int size, deque<pair<int,int>> &snake, pair<int,int> food, int score, pair<int,int> poison) {
     for (int i = 0; i < size; ++i) {
         for (int j = 0; j < size; ++j) {
             if (i == food.first && j == food.second) {
                 cout << "🍎";
+            } else if (i == poison.first && j == poison.second) {
+                cout << "☠️";
             } else if (find(snake.begin(), snake.end(), make_pair(i, j)) != snake.end()) {
                 cout << "🐍";
             } else {
@@ -85,63 +87,96 @@ pair<int,int> spawn_food(const deque<pair<int,int>> &snake) {
 }
 
 // main game loop
-void game_play() {
+void game_play()
+{
     system("clear");
-    deque<pair<int,int>> snake;
-    snake.push_back(make_pair(0, 0)); // starting single-segment snake
+    deque<pair<int, int>> snake;
+    snake.push_back(make_pair(0, 0)); // starting segment
 
-    pair<int,int> food = spawn_food(snake);
+    pair<int, int> food = spawn_food(snake);
+    pair<int, int> poison = spawn_food(snake); // spawn initial poison
+
     int score = 0;
+    int level = 1;       // starting level
+    int baseDelay = 500; // initial delay in ms
 
-    while (true) {
-        // compute next head
-        pair<int,int> currentHead = snake.back();
-        pair<int,int> nextHead = get_next_head(currentHead, direction);
+    while (true)
+    {
+        pair<int, int> currentHead = snake.back();
+        pair<int, int> nextHead = get_next_head(currentHead, direction);
 
-        // move cursor to top-left
-        cout << "\033[H";
+        cout << "\033[H"; // move cursor to top-left
 
         bool willGrow = (nextHead == food);
         bool collision = false;
 
-        if (willGrow) {
-            if (find(snake.begin(), snake.end(), nextHead) != snake.end()) {
+        if (willGrow)
+        {
+            if (find(snake.begin(), snake.end(), nextHead) != snake.end())
                 collision = true;
-            }
-        } else {
+        }
+        else
+        {
             auto itStart = snake.begin();
-            if (!snake.empty()) ++itStart; // skip tail
-            if (find(itStart, snake.end(), nextHead) != snake.end()) {
+            if (!snake.empty())
+                ++itStart; // skip tail
+            if (find(itStart, snake.end(), nextHead) != snake.end())
                 collision = true;
-            }
         }
 
-        if (collision) {
+        // Snake collides with itself
+        if (collision)
+        {
             system("clear");
             cout << "Game Over\n";
             cout << "Final Length: " << snake.size() << "  Final Score: " << score << "\n";
             exit(0);
         }
 
-        // move/grow snake
+        // Snake eats poison
+        if (nextHead == poison)
+        {
+            system("clear");
+            cout << "Snake ate poison ☠️ Game Over!\n";
+            cout << "Final Length: " << snake.size() << "  Final Score: " << score << "\n";
+            exit(0);
+        }
+
         snake.push_back(nextHead);
-        if (willGrow) {
-            score += 1; // increase score when eating food
+
+        if (willGrow)
+        {
+            score += 1;
             food = spawn_food(snake);
-            if (food.first == -1) {
+
+            // 🔹 Respawn poison every 3 points
+            if (score % 3 == 0)
+            {
+                poison = spawn_food(snake);
+            }
+
+            if (food.first == -1)
+            {
                 system("clear");
                 cout << "You Win! Final Length: " << snake.size() << "  Final Score: " << score << "\n";
                 exit(0);
             }
-        } else {
+        }
+        else
+        {
             snake.pop_front();
         }
 
-        // render
-        render_game(BOARD_SIZE, snake, food, score);
+        // Level calculation: increase level every 5 points
+        level = (score / 5) + 1;
 
-        // dynamic speed: harder as snake grows
-        int delay_ms = max(100, 500 - (int)snake.size() * 20);
+        // Render game (modified to include poison)
+        render_game(BOARD_SIZE, snake, food, poison, score);
+
+        cout << "Level: " << level << "\n";
+
+        // Dynamic speed: faster as level increases (min 50ms)
+        int delay_ms = max(50, baseDelay - (level - 1) * 50 - (int)snake.size() * 5);
         std::this_thread::sleep_for(std::chrono::milliseconds(delay_ms));
     }
 }
