@@ -76,6 +76,9 @@ void game_play(){
     snake.push_back(make_pair(0,0));
 
     pair<int, int> food = make_pair(rand() % 10, rand() % 10);
+    // Initial sleep duration (500ms)
+    chrono::milliseconds sleep_duration(500); 
+
     for(pair<int, int> head=make_pair(0,1);; head = get_next_head(head, direction)){
         // send the cursor to the top
         cout << "\033[H";
@@ -87,7 +90,12 @@ void game_play(){
         }else if (head.first == food.first && head.second == food.second) {
             // grow snake
             food = make_pair(rand() % 10, rand() % 10);
-            snake.push_back(head);            
+            snake.push_back(head);
+            // Decrease the sleep duration by 10ms for every food eaten
+            // Ensure the sleep duration doesn't drop below 50ms
+            if (sleep_duration.count() > 50) {
+                sleep_duration = chrono::milliseconds(sleep_duration.count() - 10);
+            }
         }else{
             // move snake
             snake.push_back(head);
@@ -96,6 +104,7 @@ void game_play(){
         render_game(10, snake, food);
         cout << "length of snake: " << snake.size() << endl;
     
-        sleep_for(500ms);
+        // Use the dynamic sleep duration
+        sleep_for(sleep_duration);
     }
 }
