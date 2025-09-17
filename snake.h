@@ -4,7 +4,7 @@
 #include <thread>
 #include <stdlib.h>
 #include <termios.h>
-#include <unistd.h> // for system clear
+#include <unistd.h>
 #include <map>
 #include <deque>
 #include <algorithm>
@@ -15,23 +15,19 @@ char direction='r';
 
 
 void input_handler(){
-    // change terminal settings
     struct termios oldt, newt;
     tcgetattr(STDIN_FILENO, &oldt);
     newt = oldt;
-    // turn off canonical mode and echo
     newt.c_lflag &= ~(ICANON | ECHO);
     tcsetattr(STDIN_FILENO, TCSANOW, &newt);
     map<char, char> keymap = {{'d', 'r'}, {'a', 'l'}, {'w', 'u'}, {'s', 'd'}, {'q', 'q'}};
     while (true) {
         char input = getchar();
         if (keymap.find(input) != keymap.end()) {
-            // This now correctly modifies the single, shared 'direction' variable
             direction = keymap[input];
         }else if (input == 'q'){
             exit(0);
         }
-        // You could add an exit condition here, e.g., if (input == 'q') break;
     }
     tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
 }
@@ -86,38 +82,37 @@ void game_play() {
     pair<int, int> food = generate_food(10, snake);
 
 
-    int food_eaten = 0;   // count how many food items eaten
-    int speed = 500;      // start speed in milliseconds
+    int food_eaten = 0;
+    int speed = 500;
+    int score = 0;
 
     for (pair<int, int> head = make_pair(0, 1);; head = get_next_head(head, direction)) {
-        // send the cursor to the top
         cout << "\033[H";
 
-        // check self collision
         if (find(snake.begin(), snake.end(), head) != snake.end()) {
             system("clear");
             cout << "Game Over" << endl;
             exit(0);
         } else if (head.first == food.first && head.second == food.second) {
-            // grow snake
             food = generate_food(10, snake);
 
             snake.push_back(head);
 
             food_eaten++;
+            score+=10;
 
-           
             if (food_eaten % 10 == 0 && speed > 100) {
-                speed += 50;  
+                speed += 50;
             }
         } else {
-            // move snake
             snake.push_back(head);
             snake.pop_front();
         }
 
         render_game(10, snake, food);
         cout << "length of snake: " << snake.size() << endl;
+        cout << "Score: " << score << endl;
+
         cout << "food eaten: " << food_eaten << " | current speed: " << speed << "ms" << endl;
 
         sleep_for(std::chrono::milliseconds(speed));
