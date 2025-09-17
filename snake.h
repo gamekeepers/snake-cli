@@ -35,6 +35,10 @@ void input_handler() {
             tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
             exit(0);
         }
+        else if (input == 'p') {
+            if (direction != 'P') direction = 'P';  // pause
+            else direction = 'r'; // resume moving right or previous direction
+        }
     }
     tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
 }
@@ -131,6 +135,13 @@ void game_play()
             cout << "Game Over\n";
             cout << "Final Length: " << snake.size() << "  Final Score: " << score << "\n";
             exit(0);
+        }
+
+        // ✅ Pause logic
+        if (direction == 'P')
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            continue; // skip movement, freeze game
         }
 
         // Snake eats poison
