@@ -12,8 +12,9 @@ using namespace std;
 using std::chrono::system_clock;
 using namespace std::this_thread;
 char direction='r';
-int score = 0; // New global variable for the score
-pair<int, int> poisonous_food; // New global variable for poisonous food
+int score = 0; 
+pair<int, int> poisonous_food;
+bool is_paused = false; // New global variable for pause functionality
 
 
 void input_handler(){
@@ -24,16 +25,18 @@ void input_handler(){
     // turn off canonical mode and echo
     newt.c_lflag &= ~(ICANON | ECHO);
     tcsetattr(STDIN_FILENO, TCSANOW, &newt);
-    map<char, char> keymap = {{'d', 'r'}, {'a', 'l'}, {'w', 'u'}, {'s', 'd'}, {'q', 'q'}};
+    map<char, char> keymap = {{'d', 'r'}, {'a', 'l'}, {'w', 'u'}, {'s', 'd'}, {'q', 'q'}, {'p', 'p'}}; // Add 'p' to the keymap
     while (true) {
         char input = getchar();
         if (keymap.find(input) != keymap.end()) {
-            // This now correctly modifies the single, shared 'direction' variable
-            direction = keymap[input];
+            if (input == 'p') {
+                is_paused = !is_paused; // Toggle the pause state
+            } else {
+                direction = keymap[input];
+            }
         }else if (input == 'q'){
             exit(0);
         }
-        // You could add an exit condition here, e.g., if (input == 'q') break;
     }
     tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
 }
@@ -45,7 +48,7 @@ void render_game(int size, deque<pair<int, int>> &snake, pair<int, int> food){
             if (i == food.first && j == food.second){
                 cout << "🍎";
             } else if (i == poisonous_food.first && j == poisonous_food.second) {
-                cout << "💀"; // Render the poisonous food
+                cout << "💀";
             } else if (find(snake.begin(), snake.end(), make_pair(int(i), int(j))) != snake.end()) {
                 cout << "🐍";
             } else {
@@ -97,6 +100,11 @@ void game_play(){
     for(pair<int, int> head=make_pair(0,1);; head = get_next_head(head, direction)){
         // send the cursor to the top
         cout << "\033[H";
+        if (is_paused) {
+            cout << "Game is Paused! Press 'p' to resume." << endl;
+            sleep_for(100ms); // Small delay to prevent busy-waiting
+            continue;
+        }
         // check self collision
         if (find(snake.begin(), snake.end(), head) != snake.end()) {
             system("clear");
