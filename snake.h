@@ -8,13 +8,40 @@
 #include <map>
 #include <deque>
 #include <algorithm>
+#include <fstream> // New header for file handling
+
 using namespace std;
 using std::chrono::system_clock;
 using namespace std::this_thread;
 char direction='r';
 int score = 0; 
 pair<int, int> poisonous_food;
-bool is_paused = false; // New global variable for pause functionality
+bool is_paused = false;
+
+// New function to update and display high scores
+void update_high_scores() {
+    vector<int> high_scores;
+    ifstream infile("high_scores.txt");
+    int s;
+    while (infile >> s) {
+        high_scores.push_back(s);
+    }
+    infile.close();
+
+    high_scores.push_back(score);
+    sort(high_scores.rbegin(), high_scores.rend());
+
+    ofstream outfile("high_scores.txt");
+    for (size_t i = 0; i < high_scores.size() && i < 10; ++i) {
+        outfile << high_scores[i] << endl;
+    }
+    outfile.close();
+
+    cout << "--- Top 10 High Scores ---" << endl;
+    for (int current_score : high_scores) {
+        cout << current_score << endl;
+    }
+}
 
 
 void input_handler(){
@@ -25,12 +52,12 @@ void input_handler(){
     // turn off canonical mode and echo
     newt.c_lflag &= ~(ICANON | ECHO);
     tcsetattr(STDIN_FILENO, TCSANOW, &newt);
-    map<char, char> keymap = {{'d', 'r'}, {'a', 'l'}, {'w', 'u'}, {'s', 'd'}, {'q', 'q'}, {'p', 'p'}}; // Add 'p' to the keymap
+    map<char, char> keymap = {{'d', 'r'}, {'a', 'l'}, {'w', 'u'}, {'s', 'd'}, {'q', 'q'}, {'p', 'p'}};
     while (true) {
         char input = getchar();
         if (keymap.find(input) != keymap.end()) {
             if (input == 'p') {
-                is_paused = !is_paused; // Toggle the pause state
+                is_paused = !is_paused;
             } else {
                 direction = keymap[input];
             }
@@ -109,11 +136,13 @@ void game_play(){
         if (find(snake.begin(), snake.end(), head) != snake.end()) {
             system("clear");
             cout << "Game Over" << endl;
+            update_high_scores();
             exit(0);
         } else if (head.first == poisonous_food.first && head.second == poisonous_food.second) {
             // New check for poisonous food
             system("clear");
             cout << "Game Over - You ate poisonous food!" << endl;
+            update_high_scores();
             exit(0);
         } else if (head.first == food.first && head.second == food.second) {
             // grow snake
