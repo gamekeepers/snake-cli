@@ -36,20 +36,31 @@ void input_handler(){
     tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
 }
 
+pair<int, int> generate_food(int size, const deque<pair<int, int>>& snake, pair<int,int> other_food = make_pair(-1,-1)) {
+    while (true) {
+        pair<int, int> food = make_pair(rand() % size, rand() % size);
+        if (find(snake.begin(), snake.end(), food) == snake.end() && food != other_food) {
+            return food; // valid food not colliding with snake
+        }
+    }
+}
 
-void render_game(int size, deque<pair<int, int>> &snake, pair<int, int> food){
+
+void render_game(int size, deque<pair<int, int>> &snake, pair<int, int> food, pair<int,int> poison){
     for(size_t i=0;i<size;i++){
         for(size_t j=0;j<size;j++){
             if (i == food.first && j == food.second){
                 cout << "🍎";
-            }else if (find(snake.begin(), snake.end(), make_pair(int(i), int(j))) != snake.end()) {
+            } else if (i == poison.first && j == poison.second){
+                cout << "💀";
+            } else if (find(snake.begin(), snake.end(), make_pair(int(i), int(j))) != snake.end()) {
                 cout << "🐍";
             }else{
                 cout << "⬜";
             }
+        }
+        cout << endl;
     }
-    cout << endl;
-}
 }
 
 pair<int,int> get_next_head(pair<int,int> current, char direction){
@@ -68,14 +79,24 @@ pair<int,int> get_next_head(pair<int,int> current, char direction){
     
 }
 
+int calculate_speed(int food_eaten, int base_speed = 500, int min_speed = 100, int step = 50) {
+    int reduced = base_speed - (food_eaten) * step;
+    return max(min_speed, reduced);
+}
 
 
 void game_play(){
+    int score = 0;
+    int speed = 500; // in ms, initial speed
+
     system("clear");
     deque<pair<int, int>> snake;
     snake.push_back(make_pair(0,0));
 
-    pair<int, int> food = make_pair(rand() % 10, rand() % 10);
+    pair<int, int> food = generate_food(10, snake);
+    pair<int, int> poison = generate_food(10, snake, food);
+    int moves = 0;
+
     for(pair<int, int> head=make_pair(0,1);; head = get_next_head(head, direction)){
         // send the cursor to the top
         cout << "\033[H";
@@ -84,18 +105,32 @@ void game_play(){
             system("clear");
             cout << "Game Over" << endl;
             exit(0);
+        }else if (head.first == poison.first && head.second == poison.second) {
+            system("clear");
+            cout << "Game Over" << endl;
+            exit(0);
         }else if (head.first == food.first && head.second == food.second) {
-            // grow snake
-            food = make_pair(rand() % 10, rand() % 10);
-            snake.push_back(head);            
+           // grow snake
+            food = generate_food(10, snake, poison);
+            snake.push_back(head);  
+            score += 10;
+
+           speed = calculate_speed(score/10);         
         }else{
             // move snake
             snake.push_back(head);
             snake.pop_front();
         }
-        render_game(10, snake, food);
+
+        moves++;
+        if (moves % 5 == 0) {
+            poison = generate_food(10, snake, food);
+        }
+
+        render_game(10, snake, food, poison);
         cout << "length of snake: " << snake.size() << endl;
-    
-        sleep_for(500ms);
+        cout << "score: " << score << endl;
+
+        sleep_for(std::chrono::milliseconds(speed));
     }
 }
