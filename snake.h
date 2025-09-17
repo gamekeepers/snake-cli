@@ -90,7 +90,37 @@ pair<int,int> spawn_food(const deque<pair<int,int>> &snake) {
     return f;
 }
 
-// main game loop
+// ✅ Save score to file
+void save_score(int score) {
+    ofstream file("scores.txt", ios::app); // append mode
+    if (file.is_open()) {
+        file << score << "\n";
+        file.close();
+    }
+}
+
+// ✅ Load scores and return top 10
+vector<int> load_top_scores() {
+    ifstream file("scores.txt");
+    vector<int> scores;
+    int s;
+
+    while (file >> s) {
+        scores.push_back(s);
+    }
+    file.close();
+
+    // Sort descending
+    sort(scores.begin(), scores.end(), greater<int>());
+
+    // Keep only top 10
+    if (scores.size() > 10) {
+        scores.resize(10);
+    }
+
+    return scores;
+}
+
 void game_play()
 {
     system("clear");
@@ -114,6 +144,13 @@ void game_play()
         bool willGrow = (nextHead == food);
         bool collision = false;
 
+        // ✅ Pause logic
+        if (direction == 'P')
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            continue; // skip movement, freeze game
+        }
+
         if (willGrow)
         {
             if (find(snake.begin(), snake.end(), nextHead) != snake.end())
@@ -134,14 +171,16 @@ void game_play()
             system("clear");
             cout << "Game Over\n";
             cout << "Final Length: " << snake.size() << "  Final Score: " << score << "\n";
-            exit(0);
-        }
 
-        // ✅ Pause logic
-        if (direction == 'P')
-        {
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
-            continue; // skip movement, freeze game
+            save_score(score);
+
+            cout << "\n=== Top 10 Scores ===\n";
+            vector<int> topScores = load_top_scores();
+            for (int i = 0; i < topScores.size(); i++) {
+                cout << (i + 1) << ". " << topScores[i] << "\n";
+            }
+
+            exit(0);
         }
 
         // Snake eats poison
@@ -150,6 +189,15 @@ void game_play()
             system("clear");
             cout << "Snake ate poison ☠️ Game Over!\n";
             cout << "Final Length: " << snake.size() << "  Final Score: " << score << "\n";
+
+            save_score(score);
+
+            cout << "\n=== Top 10 Scores ===\n";
+            vector<int> topScores = load_top_scores();
+            for (int i = 0; i < topScores.size(); i++) {
+                cout << (i + 1) << ". " << topScores[i] << "\n";
+            }
+
             exit(0);
         }
 
@@ -170,6 +218,15 @@ void game_play()
             {
                 system("clear");
                 cout << "You Win! Final Length: " << snake.size() << "  Final Score: " << score << "\n";
+
+                save_score(score);
+
+                cout << "\n=== Top 10 Scores ===\n";
+                vector<int> topScores = load_top_scores();
+                for (int i = 0; i < topScores.size(); i++) {
+                    cout << (i + 1) << ". " << topScores[i] << "\n";
+                }
+
                 exit(0);
             }
         }
@@ -181,7 +238,7 @@ void game_play()
         // Level calculation: increase level every 5 points
         level = (score / 5) + 1;
 
-        // Render game (modified to include poison)
+        // Render game (with poison + score)
         render_game(BOARD_SIZE, snake, food, poison, score);
 
         cout << "Level: " << level << "\n";
