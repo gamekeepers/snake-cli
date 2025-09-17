@@ -1,33 +1,92 @@
 #include <gtest/gtest.h>
 #include "snake.h"
 
-
-TEST(SnakeBehaviour, NextHeadRight) {
-    pair<int, int> current = make_pair(rand() % 10, rand() % 10);
-    EXPECT_EQ(get_next_head(current, 'r'),make_pair(current.first,current.second+1));
-    
-}
-
-
-TEST(SnakeBehaviour, NextHeadLeft) {
+TEST(SnakeBehaviour, NextHeadRight)
+{
   pair<int, int> current = make_pair(rand() % 10, rand() % 10);
-  EXPECT_EQ(get_next_head(current, 'l'),make_pair(current.first,current.second-1));
-  
+  EXPECT_EQ(get_next_head(current, 'r'), make_pair(current.first, current.second + 1));
 }
 
-TEST(SnakeBehaviour, NextHeadUp) {
+TEST(SnakeBehaviour, NextHeadLeft)
+{
   pair<int, int> current = make_pair(rand() % 10, rand() % 10);
-  EXPECT_EQ(get_next_head(current, 'u'),make_pair(current.first-1,current.second));
+  EXPECT_EQ(get_next_head(current, 'l'), make_pair(current.first, current.second - 1));
 }
 
-TEST(SnakeBehaviour, NextHeadDown) {
+TEST(SnakeBehaviour, NextHeadUp)
+{
   pair<int, int> current = make_pair(rand() % 10, rand() % 10);
-  EXPECT_EQ(get_next_head(current, 'd'),make_pair(current.first+1,current.second));
-  
+  EXPECT_EQ(get_next_head(current, 'u'), make_pair(current.first - 1, current.second));
 }
 
+TEST(SnakeBehaviour, NextHeadDown)
+{
+  pair<int, int> current = make_pair(rand() % 10, rand() % 10);
+  EXPECT_EQ(get_next_head(current, 'd'), make_pair(current.first + 1, current.second));
+}
 
-/** 
+// Test to ensure food never spawns inside the snake
+TEST(SnakeBehaviour, FoodNotInSnake)
+{
+  deque<pair<int, int>> snake = {{0, 0}, {0, 1}, {0, 2}};
+  int size = 10;
+
+  for (int i = 0; i < 100; i++)
+  {
+    auto food = generate_food(size, snake);
+    EXPECT_EQ(find(snake.begin(), snake.end(), food), snake.end())
+        << "Food spawned inside snake body!";
+  }
+}
+
+TEST(SnakeBehaviour, ScoreIncreasesBy10)
+{
+  int score = 0;
+  score = update_score(score);
+  EXPECT_EQ(score, 10);
+
+  score = update_score(score);
+  EXPECT_EQ(score, 20);
+}
+
+// Test to ensure poison never overlaps with food or snake
+TEST(SnakeBehaviour, PoisonNotOnFoodOrSnake)
+{
+  int size = 10;
+  deque<pair<int, int>> snake = {{0, 0}, {0, 1}, {0, 2}};
+
+  for (int i = 0; i < 100; i++)
+  {
+    auto food = generate_food(size, snake);
+    auto poison = generate_food(size, snake, food);
+
+    // Poison must not overlap with food
+    EXPECT_NE(poison, food) << "Poison spawned on food!";
+
+    // Poison must not overlap with snake
+    EXPECT_EQ(find(snake.begin(), snake.end(), poison), snake.end())
+        << "Poison spawned on snake body!";
+  }
+}
+
+// Test to ensure poison changes only when food is eaten
+TEST(SnakeBehaviour, PoisonMovesWhenFoodEaten)
+{
+  int size = 10;
+  deque<pair<int, int>> snake = {{0, 0}, {0, 1}, {0, 2}};
+
+  auto food = generate_food(size, snake);
+  auto poison = generate_food(size, snake, food);
+
+  // Simulate eating food
+  auto newFood = generate_food(size, snake);
+  auto newPoison = generate_food(size, snake, newFood);
+
+  // After food is eaten, poison must move
+  EXPECT_NE(poison, newPoison) << "Poison did not move after food eaten!";
+}
+
+/**
  * g++ -o my_tests snake_test.cpp -lgtest -lgtest_main -pthread;
  * This command is a two-part shell command. Let's break it down.
 
@@ -45,5 +104,5 @@ TEST(SnakeBehaviour, NextHeadDown) {
      Test, which saves you from writing your own main() to run the tests.
    * -pthread: This links the POSIX threads library, which is required by Google
      Test for its operation.
- * 
+ *
 */
