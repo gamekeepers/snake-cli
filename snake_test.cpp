@@ -1,49 +1,22 @@
 #include <gtest/gtest.h>
 #include "snake.h"
 
-
 TEST(SnakeBehaviour, NextHeadRight) {
-    pair<int, int> current = make_pair(rand() % 10, rand() % 10);
-    EXPECT_EQ(get_next_head(current, 'r'),make_pair(current.first,current.second+1));
-    
+    pair<int, int> current = {5, 9};
+    EXPECT_EQ(get_next_head(current, 'r'), make_pair(5, 0)); // wrap
 }
 
-
 TEST(SnakeBehaviour, NextHeadLeft) {
-  pair<int, int> current = make_pair(rand() % 10, rand() % 10);
-  EXPECT_EQ(get_next_head(current, 'l'),make_pair(current.first,current.second-1));
-  
+    pair<int, int> current = {5, 0};
+    EXPECT_EQ(get_next_head(current, 'l'), make_pair(5, 9)); // wrap
 }
 
 TEST(SnakeBehaviour, NextHeadUp) {
-  pair<int, int> current = make_pair(rand() % 10, rand() % 10);
-  EXPECT_EQ(get_next_head(current, 'u'),make_pair(current.first-1,current.second));
+    pair<int, int> current = {0, 5};
+    EXPECT_EQ(get_next_head(current, 'u'), make_pair(9, 5)); // wrap
 }
 
 TEST(SnakeBehaviour, NextHeadDown) {
-  pair<int, int> current = make_pair(rand() % 10, rand() % 10);
-  EXPECT_EQ(get_next_head(current, 'd'),make_pair(current.first+1,current.second));
-  
+    pair<int, int> current = {9, 5};
+    EXPECT_EQ(get_next_head(current, 'd'), make_pair(0, 5)); // wrap
 }
-
-
-/** 
- * g++ -o my_tests snake_test.cpp -lgtest -lgtest_main -pthread;
- * This command is a two-part shell command. Let's break it down.
-
-  The first part is the compilation:
-  g++ -o my_tests hello_gtest.cpp -lgtest -lgtest_main -pthread
-
-
-   * g++: This invokes the GNU C++ compiler.
-   * -o my_tests: This tells the compiler to create an executable file named
-     my_tests.
-   * hello_gtest.cpp: This is the C++ source file containing your tests.
-   * -lgtest: This links the Google Test library, which provides the core testing
-     framework.
-   * -lgtest_main: This links a pre-compiled main function provided by Google
-     Test, which saves you from writing your own main() to run the tests.
-   * -pthread: This links the POSIX threads library, which is required by Google
-     Test for its operation.
- * 
-*/
