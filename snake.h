@@ -54,7 +54,7 @@ void render_game(int size, deque<pair<int, int>> &snake, pair<int, int> food)
             }
             else if (i == poison_food.first && j == poison_food.second)
             {
-                cout << "☠️☠️";
+                cout << "💣";
             }
             else if (find(snake.begin(), snake.end(), make_pair(int(i), int(j))) != snake.end())
             {
