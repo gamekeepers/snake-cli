@@ -75,7 +75,12 @@ void game_play(){
     deque<pair<int, int>> snake;
     snake.push_back(make_pair(0,0));
 
-    pair<int, int> food = make_pair(rand() % 10, rand() % 10);
+    // The logic to spawn the food in a free spot
+    pair<int, int> food;
+    do {
+        food = make_pair(rand() % 10, rand() % 10);
+    } while (find(snake.begin(), snake.end(), food) != snake.end());
+
     // Initial sleep duration (500ms)
     chrono::milliseconds sleep_duration(500); 
 
@@ -89,7 +94,11 @@ void game_play(){
             exit(0);
         }else if (head.first == food.first && head.second == food.second) {
             // grow snake
-            food = make_pair(rand() % 10, rand() % 10);
+            // Regenerate food in a new, free spot
+            do {
+                food = make_pair(rand() % 10, rand() % 10);
+            } while (find(snake.begin(), snake.end(), food) != snake.end());
+
             snake.push_back(head);
             // Decrease the sleep duration by 10ms for every food eaten
             // Ensure the sleep duration doesn't drop below 50ms
