@@ -4,7 +4,7 @@
 #include <thread>
 #include <stdlib.h>
 #include <termios.h>
-#include <unistd.h> // for system clearing
+#include <unistd.h> // for system clear
 #include <map>
 #include <deque>
 #include <algorithm>
@@ -36,12 +36,11 @@ void input_handler() {
             exit(0);
         }
     }
-    // unreachable, but keep for symmetry
     tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
 }
 
 // render the board
-void render_game(int size, deque<pair<int,int>> &snake, pair<int,int> food) {
+void render_game(int size, deque<pair<int,int>> &snake, pair<int,int> food, int score) {
     for (int i = 0; i < size; ++i) {
         for (int j = 0; j < size; ++j) {
             if (i == food.first && j == food.second) {
@@ -54,6 +53,7 @@ void render_game(int size, deque<pair<int,int>> &snake, pair<int,int> food) {
         }
         cout << '\n';
     }
+    cout << "Length: " << snake.size() << "  Score: " << score << "\n";
 }
 
 // compute next head (wraps around)
@@ -73,7 +73,6 @@ pair<int,int> get_next_head(pair<int,int> current, char direction) {
 
 // spawn food at a location not occupied by the snake
 pair<int,int> spawn_food(const deque<pair<int,int>> &snake) {
-    // if snake fills board, return invalid food
     if ((int)snake.size() >= BOARD_SIZE * BOARD_SIZE) {
         return make_pair(-1, -1);
     }
@@ -85,32 +84,31 @@ pair<int,int> spawn_food(const deque<pair<int,int>> &snake) {
     return f;
 }
 
+// main game loop
 void game_play() {
     system("clear");
     deque<pair<int,int>> snake;
     snake.push_back(make_pair(0, 0)); // starting single-segment snake
 
     pair<int,int> food = spawn_food(snake);
+    int score = 0;
 
     while (true) {
-        // compute next head from current head (snake.back())
+        // compute next head
         pair<int,int> currentHead = snake.back();
         pair<int,int> nextHead = get_next_head(currentHead, direction);
 
-        // send cursor to top-left so we overwrite previous frame
+        // move cursor to top-left
         cout << "\033[H";
 
         bool willGrow = (nextHead == food);
         bool collision = false;
 
         if (willGrow) {
-            // If eating, tail won't move — colliding with any part is fatal
             if (find(snake.begin(), snake.end(), nextHead) != snake.end()) {
                 collision = true;
             }
         } else {
-            // Not growing: tail will be popped, so moving into current tail is allowed.
-            // Check collision against body excluding the tail (i.e., start from snake.begin()+1)
             auto itStart = snake.begin();
             if (!snake.empty()) ++itStart; // skip tail
             if (find(itStart, snake.end(), nextHead) != snake.end()) {
@@ -121,30 +119,28 @@ void game_play() {
         if (collision) {
             system("clear");
             cout << "Game Over\n";
-            cout << "Final length: " << snake.size() << "\n";
+            cout << "Final Length: " << snake.size() << "  Final Score: " << score << "\n";
             exit(0);
         }
 
-        // perform move
+        // move/grow snake
         snake.push_back(nextHead);
         if (willGrow) {
-            // generate new food outside the snake
+            score += 1; // increase score when eating food
             food = spawn_food(snake);
             if (food.first == -1) {
-                // board full → player wins
                 system("clear");
-                cout << "You Win! Final length: " << snake.size() << "\n";
+                cout << "You Win! Final Length: " << snake.size() << "  Final Score: " << score << "\n";
                 exit(0);
             }
         } else {
             snake.pop_front();
         }
 
-        // draw
-        render_game(BOARD_SIZE, snake, food);
-        cout << "length of snake: " << snake.size() << '\n';
+        // render
+        render_game(BOARD_SIZE, snake, food, score);
 
-        // dynamic speed (harder as snake grows). floor at 100ms.
+        // dynamic speed: harder as snake grows
         int delay_ms = max(100, 500 - (int)snake.size() * 20);
         std::this_thread::sleep_for(std::chrono::milliseconds(delay_ms));
     }
