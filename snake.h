@@ -11,9 +11,11 @@
 using namespace std;
 using std::chrono::system_clock;
 using namespace std::this_thread;
+
 char direction='r';
 
-
+vector<int> high_scores; 
+bool paused = false;
 void input_handler(){
     // change terminal settings
     struct termios oldt, newt;
@@ -22,31 +24,36 @@ void input_handler(){
     // turn off canonical mode and echo
     newt.c_lflag &= ~(ICANON | ECHO);
     tcsetattr(STDIN_FILENO, TCSANOW, &newt);
-    map<char, char> keymap = {{'d', 'r'}, {'a', 'l'}, {'w', 'u'}, {'s', 'd'}, {'q', 'q'}};
-    while (true) {
-        char input = getchar();
-        if (keymap.find(input) != keymap.end()) {
-            // This now correctly modifies the single, shared 'direction' variable
-            direction = keymap[input];
-        }else if (input == 'q'){
-            exit(0);
-        }
-        // You could add an exit condition here, e.g., if (input == 'q') break;
+   map<char, char> keymap = {
+    {'d', 'r'}, {'a', 'l'}, {'w', 'u'}, {'s', 'd'}, {'q', 'q'}
+};
+while (true) {
+    char input = getchar();
+
+    if (input == 'p') {
+        paused = !paused;  // toggle pause on/off
     }
-    tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+    else if (keymap.find(input) != keymap.end()) {
+        direction = keymap[input];
+    } 
+    else if (input == 'q') {
+        exit(0);
+    }
 }
 
+    tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+}
 
 void render_game(int size, deque<pair<int, int>> &snake, pair<int, int> food, pair<int,int> poison){
     for(size_t i=0;i<size;i++){
         for(size_t j=0;j<size;j++){
             if (i == food.first && j == food.second){
                 cout << "🍎";
-            }else if (i == poison.first && j == poison.second){
+            } else if (i == poison.first && j == poison.second){
                 cout << "💀";
-            }else if (find(snake.begin(), snake.end(), make_pair(int(i), int(j))) != snake.end()) {
+            } else if (find(snake.begin(), snake.end(), make_pair(int(i), int(j))) != snake.end()) {
                 cout << "🐍";
-            }else{
+            } else {
                 cout << "⬜";
             }
         }
@@ -58,19 +65,28 @@ pair<int,int> get_next_head(pair<int,int> current, char direction){
     pair<int, int> next; 
     if(direction =='r'){
         next = make_pair(current.first,(current.second+1) % 10);
-    }else if (direction=='l')
-    {
+    } else if (direction=='l') {
         next = make_pair(current.first, current.second==0?9:current.second-1);
-    }else if(direction =='d'){
-            next = make_pair((current.first+1)%10,current.second);
-        }else if (direction=='u'){
-            next = make_pair(current.first==0?9:current.first-1, current.second);
-        }
+    } else if(direction =='d'){
+        next = make_pair((current.first+1)%10,current.second);
+    } else if (direction=='u'){
+        next = make_pair(current.first==0?9:current.first-1, current.second);
+    }
     return next;
-    
 }
 
-
+void update_and_show_scores(int score) {
+    high_scores.push_back(score);
+    sort(high_scores.begin(), high_scores.end(), greater<int>());
+    if (high_scores.size() > 10) {
+        high_scores.resize(10);
+    }
+    cout << "\n=== Top 10 High Scores ===" << endl;
+    for (size_t i = 0; i < high_scores.size(); i++) {
+        cout << i + 1 << ". " << high_scores[i] << endl;
+    }
+    cout << "===========================" << endl;
+}
 
 
 void game_play() {
@@ -86,14 +102,21 @@ void game_play() {
     int score = 0;     // score tracking
 
     for (pair<int, int> head = make_pair(0, 1); ; head = get_next_head(head, direction)) {
-        // send the cursor to the top of terminal
         cout << "\033[H";
 
+        while (paused) {
+            cout << "\033[H"; // reset cursor
+            render_game(10, snake, food, poison);
+            cout << "\n==== PAUSED ====" << endl;
+            cout << "Press 'p' to resume..." << endl;
+            sleep_for(chrono::milliseconds(200));
+        }
         // check self collision
         if (find(snake.begin(), snake.end(), head) != snake.end()) {
             system("clear");
             cout << "Game Over - You ran into yourself!" << endl;
             cout << "Final Score: " << score << endl;
+             update_and_show_scores(score);
             exit(0);
         } 
         // check poison collision
@@ -101,16 +124,21 @@ void game_play() {
             system("clear");
             cout << "Game Over - You ate poison!" << endl;
             cout << "Final Score: " << score << endl;
+            update_and_show_scores(score);
             exit(0);
-        }
+        } 
         // check food collision
         else if (head.first == food.first && head.second == food.second) {
             snake.push_back(head);
             food_count++;
             score += 10; // increment score per food
 
-            // spawn new food & poison
-            food = make_pair(rand() % 10, rand() % 10);
+            // ---- FIX: Spawn food not inside snake ----
+            do {
+                food = make_pair(rand() % 10, rand() % 10);
+            } while (find(snake.begin(), snake.end(), food) != snake.end());
+
+            // poison can spawn anywhere
             poison = make_pair(rand() % 10, rand() % 10);
 
             // speed up every 10 foods (minimum 100ms)
