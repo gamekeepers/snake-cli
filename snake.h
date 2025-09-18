@@ -21,6 +21,7 @@ public:
     void run();
 
 private:
+    void spawn_food(); 
     void render();
     void update();
     bool check_collision();

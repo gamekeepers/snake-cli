@@ -7,6 +7,10 @@ using namespace std::chrono;
 Game::Game(int size) : size(size), direction('r'), is_running(true) {
     snake.push_back({0, 0});
     food = {rand() % size, rand() % size};
+    spawn_food();
+}
+void Game::spawn_food() {
+    food = {rand() % size, rand() % size};
 }
 
 void Game::run() {
@@ -64,6 +68,8 @@ void Game::update() {
 
     if (next_h.first == food.first && next_h.second == food.second) {
         food = {rand() % size, rand() % size};
+        spawn_food(); 
+
     } else {
         snake.pop_front();
     }
