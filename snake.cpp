@@ -33,11 +33,14 @@ void Game::run() {
     thread input_thread(input_handler_thread, this);
 
     while (is_running) {
+        cout << "\033[H";
         if (is_paused) {
-            sleep_for(milliseconds(100)); // Sleep to prevent high CPU usage
+            render(); // Re-render the game to show the pause message
+            cout << "         PAUSED" << endl;
+            cout << "Press 'p' to continue" << endl;
+            sleep_for(milliseconds(100));
             continue;
         }
-        cout << "\033[H";
         update();
         render();
         cout << "Score: " << score << endl; // <-- Display the score
