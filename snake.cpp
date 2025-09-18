@@ -10,7 +10,9 @@ Game::Game(int size) : size(size), direction('r'), is_running(true) {
     spawn_food();
 }
 void Game::spawn_food() {
-    food = {rand() % size, rand() % size};
+    do {
+        food = {rand() % size, rand() % size};
+    } while (find(snake.begin(), snake.end(), food) != snake.end());
 }
 
 void Game::run() {
