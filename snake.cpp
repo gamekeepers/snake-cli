@@ -7,6 +7,7 @@ using namespace std::chrono;
 Game::Game(int size) : size(size), direction('r'), is_running(true) {
     snake.push_back({0, 0});
     food = {rand() % size, rand() % size};
+    load_high_scores(); 
     spawn_food();
     size(size),
     direction('r'),
@@ -138,6 +139,12 @@ bool Game::check_collision() {
 
 void Game::game_over() {
     is_running = false;
+    high_scores.push_back(score);
+    sort(high_scores.rbegin(), high_scores.rend());
+    if (high_scores.size() > 10) {
+        high_scores.resize(10);
+    }
+    save_high_scores();
     system("clear");
     cout << "===========================" << endl;
     cout << "        Game Over" << endl;
