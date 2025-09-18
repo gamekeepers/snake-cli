@@ -151,6 +151,11 @@ void Game::game_over() {
     cout << "===========================" << endl;
     cout << "     Your score: " << score << endl;
     cout << "===========================" << endl;
+    cout << "      -- High Scores --" << endl;
+    for (int i = 0; i < high_scores.size(); ++i) {
+        cout << "      " << i + 1 << ". " << high_scores[i] << endl;
+    }
+
 }
 
 pair<int, int> Game::get_next_head() {
