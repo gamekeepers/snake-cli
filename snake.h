@@ -35,6 +35,7 @@ private:
     std::pair<int, int> food;
     std::vector<std::pair<int, int>> poison; 
     bool is_running;
+    bool is_paused; 
     std::chrono::milliseconds game_speed_ms;
 
     friend void input_handler_thread(Game* game);

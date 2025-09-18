@@ -11,6 +11,7 @@ Game::Game(int size) : size(size), direction('r'), is_running(true) {
     size(size),
     direction('r'),
     is_running(true),
+    is_paused(false), 
     score(0) // <-- Initialize score here
     game_speed_ms(500) // <-- Initialize speed (500ms)
 
@@ -32,6 +33,10 @@ void Game::run() {
     thread input_thread(input_handler_thread, this);
 
     while (is_running) {
+        if (is_paused) {
+            sleep_for(milliseconds(100)); // Sleep to prevent high CPU usage
+            continue;
+        }
         cout << "\033[H";
         update();
         render();
@@ -167,11 +172,13 @@ void input_handler_thread(Game* game) {
         char input = getchar();
         if (keymap.count(input)) {
             game->direction = keymap[input];
-        }
-        if (input == 'q') {
+        } else if (input == 'p') { // <-- Add pause logic
+            game->is_paused = !game->is_paused;
+        } else if (input == 'q') {
             game->is_running = false;
         }
     }
+
 
     tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
 }
