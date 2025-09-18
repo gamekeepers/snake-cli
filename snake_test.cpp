@@ -23,7 +23,24 @@ TEST(SnakeBehaviour, NextHeadUp) {
 TEST(SnakeBehaviour, NextHeadDown) {
   pair<int, int> current = make_pair(rand() % 10, rand() % 10);
   EXPECT_EQ(get_next_head(current, 'd'),make_pair(current.first+1,current.second));
-  
+}
+
+TEST(FoodSpawning, FoodNotInSnakeBody) {
+    deque<pair<int, int>> snake;
+    snake.push_back(make_pair(0,0));
+    snake.push_back(make_pair(0,1));
+    snake.push_back(make_pair(0,2));
+    
+    pair<int, int> food = spawn_food(snake);
+    EXPECT_TRUE(find(snake.begin(), snake.end(), food) == snake.end());
+}
+
+TEST(HighScores, SaveAndLoad) {
+    high_scores.clear();
+    save_score(100);
+    save_score(200);
+    EXPECT_EQ(high_scores[0], 200);
+    EXPECT_EQ(high_scores[1], 100);
 }
 
 
