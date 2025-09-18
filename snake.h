@@ -10,6 +10,7 @@
 #include <map>
 #include <deque>
 #include <algorithm>
+#include <string> 
 using namespace std;
 using std::chrono::system_clock;
 using namespace std::this_thread;
@@ -27,6 +28,8 @@ private:
     void update();
     bool check_collision();
     void game_over();
+    void load_high_scores();      
+    void save_high_scores();      
     std::pair<int, int> get_next_head();
     int score;
     int size;
@@ -34,6 +37,7 @@ private:
     std::deque<std::pair<int, int>> snake;
     std::pair<int, int> food;
     std::vector<std::pair<int, int>> poison; 
+    std::vector<int> high_scores; 
     bool is_running;
     bool is_paused; 
     std::chrono::milliseconds game_speed_ms;

@@ -185,3 +185,22 @@ void input_handler_thread(Game* game) {
 
     tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
 }
+void Game::load_high_scores() {
+    ifstream file("high_scores.txt");
+    if (file.is_open()) {
+        int score;
+        while (file >> score) {
+            high_scores.push_back(score);
+        }
+        file.close();
+    }
+}
+void Game::save_high_scores() {
+    ofstream file("high_scores.txt");
+    if (file.is_open()) {
+        for (int i = 0; i < high_scores.size(); ++i) {
+            file << high_scores[i] << endl;
+        }
+        file.close();
+    }
+}
