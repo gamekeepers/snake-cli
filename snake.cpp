@@ -84,13 +84,17 @@ void Game::update() {
     }
 
     if (next_h.first == food.first && next_h.second == food.second) {
-        food = {rand() % size, rand() % size};
-        score += 10; // <-- Increment the score
-        spawn_food(); 
+        score += 10;
+        spawn_food();
 
+        // Speed up the game every 20 points
+        if ((score % 20 == 0) && (game_speed_ms.count() > 150)) {
+            game_speed_ms -= std::chrono::milliseconds(50);
+        }
     } else {
         snake.pop_front();
     }
+
 }
 
 bool Game::check_collision() {
