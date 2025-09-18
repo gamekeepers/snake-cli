@@ -72,6 +72,7 @@ pair<int,int> get_next_head(pair<int,int> current, char direction){
 
 
 
+
 void game_play() {
     system("clear");
     deque<pair<int, int>> snake;
