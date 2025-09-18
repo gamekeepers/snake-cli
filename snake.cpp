@@ -120,6 +120,11 @@ bool Game::check_collision() {
             return true;
         }
     }
+        // Check poison collision
+    if (find(poison.begin(), poison.end(), head) != poison.end()) {
+        return true;
+    }
+
     return false;
 }
 
