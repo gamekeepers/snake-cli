@@ -33,6 +33,7 @@ private:
     std::deque<std::pair<int, int>> snake;
     std::pair<int, int> food;
     bool is_running;
+    std::chrono::milliseconds game_speed_ms;
 
     friend void input_handler_thread(Game* game);
 };

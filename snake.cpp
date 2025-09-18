@@ -12,6 +12,8 @@ Game::Game(int size) : size(size), direction('r'), is_running(true) {
     direction('r'),
     is_running(true),
     score(0) // <-- Initialize score here
+    game_speed_ms(500) // <-- Initialize speed (500ms)
+
 {
     snake.push_back({0, 0});
     spawn_food();
@@ -35,6 +37,7 @@ void Game::run() {
         render();
         cout << "Score: " << score << endl; // <-- Display the score
         cout << "Length of snake: " << snake.size() << endl;
+        sleep_for(game_speed_ms); // <-- Use the variable here
         sleep_for(milliseconds(500));
     }
 
