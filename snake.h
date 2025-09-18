@@ -27,7 +27,7 @@ private:
     bool check_collision();
     void game_over();
     std::pair<int, int> get_next_head();
-
+    int score;
     int size;
     char direction;
     std::deque<std::pair<int, int>> snake;

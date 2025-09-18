@@ -8,6 +8,16 @@ Game::Game(int size) : size(size), direction('r'), is_running(true) {
     snake.push_back({0, 0});
     food = {rand() % size, rand() % size};
     spawn_food();
+    size(size),
+    direction('r'),
+    is_running(true),
+    score(0) // <-- Initialize score here
+{
+    snake.push_back({0, 0});
+    spawn_food();
+}
+
+
 }
 void Game::spawn_food() {
     do {
@@ -23,11 +33,13 @@ void Game::run() {
         cout << "\033[H";
         update();
         render();
+        cout << "Score: " << score << endl; // <-- Display the score
         cout << "Length of snake: " << snake.size() << endl;
         sleep_for(milliseconds(500));
     }
 
     input_thread.join();
+
 }
 
 void Game::render() {
@@ -94,7 +106,7 @@ void Game::game_over() {
     cout << "===========================" << endl;
     cout << "        Game Over" << endl;
     cout << "===========================" << endl;
-    cout << "     Your score: " << snake.size() << endl;
+    cout << "     Your score: " << score << endl;
     cout << "===========================" << endl;
 }
 
