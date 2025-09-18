@@ -50,23 +50,23 @@ void Game::render() {
     for (int i = 0; i < size; ++i) cout << "══";
     cout << "╗" << endl;
 
-    for (int i = 0; i < size; i++) {
+for (int i = 0; i < size; i++) {
         cout << "║";
         for (int j = 0; j < size; j++) {
-            if (i == food.first && j == food.second) {
+            std::pair<int, int> current_pos = {i, j};
+            if (current_pos == food) {
                 cout << "🍎";
-            } else if (find(snake.begin(), snake.end(), make_pair(i, j)) != snake.end()) {
-                if (make_pair(i, j) == snake.back()) {
-                    cout << "😀";
-                } else {
-                    cout << "🟩";
-                }
+            } else if (find(poison.begin(), poison.end(), current_pos) != poison.end()) {
+                cout << "☠️ "; // <-- Render poison
+            } else if (find(snake.begin(), snake.end(), current_pos) != snake.end()) {
+                // ... snake rendering logic ...
             } else {
                 cout << "  ";
             }
         }
         cout << "║" << endl;
     }
+
 
     cout << "╚";
     for (int i = 0; i < size; ++i) cout << "══";
@@ -86,6 +86,9 @@ void Game::update() {
     if (next_h.first == food.first && next_h.second == food.second) {
         score += 10;
         spawn_food();
+        if (score > 0 && score % 30 == 0) {
+            spawn_poison();
+        }
 
         // Speed up the game every 20 points
         if ((score % 20 == 0) && (game_speed_ms.count() > 150)) {
@@ -95,6 +98,18 @@ void Game::update() {
         snake.pop_front();
     }
 
+}
+void Game::spawn_poison() {
+    std::pair<int, int> new_poison_pos;
+    do {
+        new_poison_pos = {rand() % size, rand() % size};
+    } while (
+        // Ensure it's not on the snake
+        find(snake.begin(), snake.end(), new_poison_pos) != snake.end() ||
+        // Ensure it's not on the regular food
+        new_poison_pos == food
+    );
+    poison.push_back(new_poison_pos);
 }
 
 bool Game::check_collision() {

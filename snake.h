@@ -22,6 +22,7 @@ public:
 
 private:
     void spawn_food(); 
+    void spawn_poison(); // <-- Add this
     void render();
     void update();
     bool check_collision();
@@ -32,6 +33,7 @@ private:
     char direction;
     std::deque<std::pair<int, int>> snake;
     std::pair<int, int> food;
+    std::vector<std::pair<int, int>> poison; 
     bool is_running;
     std::chrono::milliseconds game_speed_ms;
 
