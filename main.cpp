@@ -1,9 +1,13 @@
 #include "snake.h"
+#include <iostream>
 
-int main(int argc, char *argv[]) {
-    thread input_thread(input_handler);
-    thread game_thread(game_play);   
-    input_thread.join();
-    game_thread.join();
-return 0;
+int main() {
+    std::cout << "Starting Snake Game..." << std::endl;
+    std::cout << "Controls: W (Up), A (Left), S (Down), D (Right), Q (Quit)" << std::endl;
+    std::this_thread::sleep_for(std::chrono::seconds(2));
+
+    Game game;
+    game.run();
+
+    return 0;
 }
