@@ -82,6 +82,7 @@ void Game::update() {
 
     if (next_h.first == food.first && next_h.second == food.second) {
         food = {rand() % size, rand() % size};
+        score += 10; // <-- Increment the score
         spawn_food(); 
 
     } else {
