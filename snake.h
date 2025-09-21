@@ -8,10 +8,12 @@
 #include <map>
 #include <deque>
 #include <algorithm>
+#include <fstream>
 using namespace std;
 using std::chrono::system_clock;
 using namespace std::this_thread;
 char direction='r';
+bool paused = false;
 
 
 void input_handler(){
@@ -28,6 +30,8 @@ void input_handler(){
         if (keymap.find(input) != keymap.end()) {
             // This now correctly modifies the single, shared 'direction' variable
             direction = keymap[input];
+        }else if (input == 'p') {
+            paused = !paused;
         }else if (input == 'q'){
             exit(0);
         }
@@ -37,11 +41,13 @@ void input_handler(){
 }
 
 
-void render_game(int size, deque<pair<int, int>> &snake, pair<int, int> food){
+void render_game(int size, deque<pair<int, int>> &snake, pair<int, int> food, pair<int, int> poison){
     for(size_t i=0;i<size;i++){
         for(size_t j=0;j<size;j++){
             if (i == food.first && j == food.second){
                 cout << "🍎";
+            }else if (i == poison.first && j == poison.second){
+                cout << "☠️";
             }else if (find(snake.begin(), snake.end(), make_pair(int(i), int(j))) != snake.end()) {
                 cout << "🐍";
             }else{
@@ -61,11 +67,39 @@ pair<int,int> get_next_head(pair<int,int> current, char direction){
         next = make_pair(current.first, current.second==0?9:current.second-1);
     }else if(direction =='d'){
             next = make_pair((current.first+1)%10,current.second);
-        }else if (direction=='u'){
-            next = make_pair(current.first==0?9:current.first-1, current.second);
-        }
+    }else if (direction=='u'){
+        next = make_pair(current.first==0?9:current.first-1, current.second);        
+    }
     return next;
     
+}
+
+void update_highscores(int score){
+    vector<int> scores;
+    ifstream infile("highscores.txt");
+    int s;
+    while(infile >> s){
+        scores.push_back(s);
+    }
+    infile.close();
+
+    scores.push_back(score);
+    sort(scores.begin(), scores.end(), greater<int>());
+
+    if(scores.size() > 10){
+        scores.resize(10);
+    }
+
+    ofstream outfile("highscores.txt");
+    for(int sc : scores){
+        outfile << sc << endl;
+    }
+    outfile.close();
+
+    cout << "\n🏆 Top 10 High Scores 🏆" << endl;
+    for(size_t i = 0;i < scores.size();i++){
+        cout << i+1 << ". " << scores[i] << endl;
+    }
 }
 
 
@@ -75,27 +109,64 @@ void game_play(){
     deque<pair<int, int>> snake;
     snake.push_back(make_pair(0,0));
 
-    pair<int, int> food = make_pair(rand() % 10, rand() % 10);
+    auto generate_food = [&](deque<pair<int, int>> &snake, pair<int,int> otherFood) {
+        pair<int, int> newFood;
+        do {
+            newFood = make_pair(rand() % 10, rand() % 10);
+        } while (find(snake.begin(), snake.end(), newFood) != snake.end() || newFood == otherFood);
+        return newFood;
+    };
+
+    pair<int, int> food = generate_food(snake, {-1, -1});
+    pair<int, int> poison = generate_food(snake, food);
+
+    int score = 0;
+    int foodEaten = 0;
+    int speed = 500;
+    
     for(pair<int, int> head=make_pair(0,1);; head = get_next_head(head, direction)){
         // send the cursor to the top
         cout << "\033[H";
+
+        if(paused){
+            cout << "Game Paused - Press 'p' to Resume" << endl;
+            sleep_for(200ms);
+            continue;
+        }
         // check self collision
         if (find(snake.begin(), snake.end(), head) != snake.end()) {
             system("clear");
-            cout << "Game Over" << endl;
+            cout << "Game Over! You ate yourself 🐍" << endl;
+            cout << "Final Score: " << score << endl;
+            update_highscores(score);
             exit(0);
         }else if (head.first == food.first && head.second == food.second) {
             // grow snake
-            food = make_pair(rand() % 10, rand() % 10);
-            snake.push_back(head);            
+            food = generate_food(snake, poison);
+            poison = generate_food(snake, food);
+            snake.push_back(head);
+            foodEaten++;
+            score += 10;
+
+            if(foodEaten%10 == 0 && speed > 100){ speed -= 50; }
+        }else if (head.first == poison.first && head.second == poison.second) {
+            system("clear");
+            cout << "Game Over! You ate poison ☠️" << endl;
+            cout << "Final Score: " << score << endl;
+            update_highscores(score);
+            exit(0);
         }else{
             // move snake
             snake.push_back(head);
             snake.pop_front();
         }
-        render_game(10, snake, food);
+        render_game(10, snake, food, poison);
+        cout << "Score: " << score << endl;
         cout << "length of snake: " << snake.size() << endl;
+        cout << "Speed: " << speed << "ms" << endl;
     
-        sleep_for(500ms);
+        sleep_for(std::chrono::milliseconds(speed));
     }
 }
+
+
