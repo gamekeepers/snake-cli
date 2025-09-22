@@ -53,7 +53,7 @@ void render_game(int size, deque<Cell> &snake, Cell food){
 }
 }
 
-pair<int,int> get_next_head(pair<int,int> current, char direction){
+Cell get_next_head(Cell current, char direction){
     Cell next; 
     if(direction =='r'){
         next = make_pair(current.first,(current.second+1) % 10);
@@ -113,7 +113,7 @@ void game_play(){
 
         render_game(10, snake, food);
         cout << "length of snake: " << snake.size() << endl;
-        
+
         sleep_for(500ms);
     }
 }
