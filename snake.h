@@ -13,6 +13,7 @@ using std::chrono::system_clock;
 using namespace std::this_thread;
 char direction='r';
 
+typedef pair<int, int> Cell;
 
 void input_handler(){
     // change terminal settings
@@ -37,7 +38,7 @@ void input_handler(){
 }
 
 
-void render_game(int size, deque<pair<int, int>> &snake, pair<int, int> food){
+void render_game(int size, deque<Cell> &snake, Cell food){
     for(size_t i=0;i<size;i++){
         for(size_t j=0;j<size;j++){
             if (i == food.first && j == food.second){
@@ -53,7 +54,7 @@ void render_game(int size, deque<pair<int, int>> &snake, pair<int, int> food){
 }
 
 pair<int,int> get_next_head(pair<int,int> current, char direction){
-    pair<int, int> next; 
+    Cell next; 
     if(direction =='r'){
         next = make_pair(current.first,(current.second+1) % 10);
     }else if (direction=='l')
@@ -72,11 +73,11 @@ pair<int,int> get_next_head(pair<int,int> current, char direction){
 
 void game_play(){
     system("clear");
-    deque<pair<int, int>> snake;
+    deque<Cell> snake;
     snake.push_back(make_pair(0,0));
 
-    pair<int, int> food = make_pair(rand() % 10, rand() % 10);
-    for(pair<int, int> head=make_pair(0,1);; head = get_next_head(head, direction)){
+    Cell food = make_pair(rand() % 10, rand() % 10);
+    for(Cell head=make_pair(0,1);; head = get_next_head(head, direction)){
         // send the cursor to the top
         cout << "\033[H";
         // check self collision
