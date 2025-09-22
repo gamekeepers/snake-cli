@@ -26,6 +26,18 @@ TEST(SnakeBehaviour, NextHeadDown) {
   
 }
 
+TEST(SnakeBehaviour, FoodNotOnSnake) {
+    deque<pair<int,int>> snake = {
+        {0,0}, {0,1}, {0,2}, {0,3}, {0,4}
+    };
+
+    // Run multiple times to increase confidence
+    for (int i = 0; i < 100; i++) {
+        pair<int,int> food = generate_food(snake, 10);
+        EXPECT_EQ(find(snake.begin(), snake.end(), food), snake.end())
+            << "Food spawned inside snake at " << food.first << "," << food.second;
+    }
+}
 
 /** 
  * g++ -o my_tests snake_test.cpp -lgtest -lgtest_main -pthread;
