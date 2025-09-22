@@ -76,6 +76,9 @@ void game_play(){
     snake.push_back(make_pair(0,0));
 
     pair<int, int> food = make_pair(rand() % 10, rand() % 10);
+    int food_eaten = 0; // Counter for food
+    auto sleep_duration = 500ms; // Initial speed
+    
     for(pair<int, int> head=make_pair(0,1);; head = get_next_head(head, direction)){
         // send the cursor to the top
         cout << "\033[H";
@@ -87,7 +90,13 @@ void game_play(){
         }else if (head.first == food.first && head.second == food.second) {
             // grow snake
             food = make_pair(rand() % 10, rand() % 10);
-            snake.push_back(head);            
+            snake.push_back(head);  
+            food_eaten++;
+            
+             // Increase speed every 10 food items
+            if (food_eaten % 10 == 0 && sleep_duration > 100ms) {
+                sleep_duration -= 50ms;  // Speed up
+            }
         }else{
             // move snake
             snake.push_back(head);
@@ -95,7 +104,8 @@ void game_play(){
         }
         render_game(10, snake, food);
         cout << "length of snake: " << snake.size() << endl;
-    
-        sleep_for(500ms);
+        cout << "Speed: " << sleep_duration.count() << " ms per frame" << endl;
+
+        sleep_for(sleep_duration);
     }
 }
