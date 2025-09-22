@@ -38,20 +38,6 @@ void input_handler(){
 }
 
 
-void render_game(int size, deque<Cell> &snake, Cell food){
-    for(size_t i=0;i<size;i++){
-        for(size_t j=0;j<size;j++){
-            if (i == food.first && j == food.second){
-                cout << "🍎";
-            }else if (find(snake.begin(), snake.end(), make_pair(int(i), int(j))) != snake.end()) {
-                cout << "🐍";
-            }else{
-                cout << "⬜";
-            }
-    }
-    cout << endl;
-}
-}
 
 Cell get_next_head(Cell current, char direction){
     Cell next; 
@@ -73,13 +59,13 @@ void reset_cursor(){
     cout << "\033[H";
 }
 
-bool is_part_of_snake(deque<Cell> snake, Cell position){
-    return find(snake.begin(), snake.end(), position) != snake.end();
-}
+// bool is_part_of_snake(deque<Cell> snake, Cell position){
+//     return find(snake.begin(), snake.end(), position) != snake.end();
+// }
 
-void grow_snake(deque<Cell> &snake, Cell new_head){
-    snake.push_back(new_head);
-}
+// void grow_snake(deque<Cell> &snake, Cell new_head){
+//     snake.push_back(new_head);
+// }
 
 void move_snake(deque<Cell> &snake, Cell new_head){
     snake.push_back(new_head);
@@ -91,28 +77,75 @@ Cell generate_random_cell(){
     return new_pos;
 }
 
+class Snake{
+    private:
+        deque<Cell> body;
+        int size=0;
+    public:
+    Snake(){
+        this->body.push_back(make_pair(0,0));
+    }
+
+    int getSize(){
+        return this->body.size();
+    }
+    void grow(Cell new_head){
+        this->body.push_back(new_head);
+    }
+
+    void move(Cell new_head){
+        this->body.push_back(new_head);
+        this->body.pop_front();
+    }
+
+    bool is_part_of(Cell position){
+        return find(this->body.begin(), this->body.end(), position) != this->body.end();
+    }
+};
+
+
+    
+
+
+void render_game(int size, Snake &snake, Cell food){
+    for(size_t i=0;i<size;i++){
+        for(size_t j=0;j<size;j++){
+            if (i == food.first && j == food.second){
+                cout << "🍎";
+            }else if (snake.is_part_of(make_pair(int(i), int(j)))) {
+                cout << "🐍";
+            }else{
+                cout << "⬜";
+            }
+    }
+    cout << endl;
+}
+}
+
+
+
 void game_play(){
     system("clear");
-    deque<Cell> snake;
-    snake.push_back(make_pair(0,0));
+    Snake snake;
+    // snake.push_back(make_pair(0,0));
 
     Cell food = generate_random_cell();
     for(Cell head=make_pair(0,1);; head = get_next_head(head, direction)){
         reset_cursor();
         // check self collision
-        if (is_part_of_snake(snake, head)) {
+        if (snake.is_part_of(head)) {
             system("clear");
             cout << "Game Over" << endl;
             exit(0);
-        }else if (is_part_of_snake(snake, food)) {
-            grow_snake(snake, head);
+        }else if (snake.is_part_of(food)) {
+            snake.grow(head);
             food = generate_random_cell();
         }else{
-            move_snake(snake, head);
+            snake.move(head);
         }
 
         render_game(10, snake, food);
-        cout << "length of snake: " << snake.size() << endl;
+        cout << "length of snake: " << snake.getSize() << endl;
 
         sleep_for(500ms);
     }
