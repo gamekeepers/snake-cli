@@ -1,29 +1,38 @@
-#include <gtest/gtest.h>
+ #include <gtest/gtest.h>
 #include "snake.h"
 
 
-TEST(SnakeBehaviour, NextHeadRight) {
-    pair<int, int> current = make_pair(rand() % 10, rand() % 10);
-    EXPECT_EQ(get_next_head(current, 'r'),make_pair(current.first,current.second+1));
-    
+TEST(SnakeBehaviour, NextHeadRightWraps) {
+    pair<int, int> current = make_pair(3, 9);
+    EXPECT_EQ(Snake::computeNextHead(current, 'r', 10), make_pair(3, 0));
 }
 
 
-TEST(SnakeBehaviour, NextHeadLeft) {
-  pair<int, int> current = make_pair(rand() % 10, rand() % 10);
-  EXPECT_EQ(get_next_head(current, 'l'),make_pair(current.first,current.second-1));
-  
+TEST(SnakeBehaviour, NextHeadLeftWraps) {
+  pair<int, int> current = make_pair(4, 0);
+  EXPECT_EQ(Snake::computeNextHead(current, 'l', 10), make_pair(4, 9));
 }
 
-TEST(SnakeBehaviour, NextHeadUp) {
-  pair<int, int> current = make_pair(rand() % 10, rand() % 10);
-  EXPECT_EQ(get_next_head(current, 'u'),make_pair(current.first-1,current.second));
+TEST(SnakeBehaviour, NextHeadUpWraps) {
+  pair<int, int> current = make_pair(0, 7);
+  EXPECT_EQ(Snake::computeNextHead(current, 'u', 10), make_pair(9, 7));
 }
 
-TEST(SnakeBehaviour, NextHeadDown) {
-  pair<int, int> current = make_pair(rand() % 10, rand() % 10);
-  EXPECT_EQ(get_next_head(current, 'd'),make_pair(current.first+1,current.second));
-  
+TEST(SnakeBehaviour, NextHeadDownWraps) {
+  pair<int, int> current = make_pair(9, 2);
+  EXPECT_EQ(Snake::computeNextHead(current, 'd', 10), make_pair(0, 2));
+}
+
+TEST(SnakeClass, GrowAndMoveBehaviour) {
+  Snake s(10);
+  // Start with one segment at (0,0); grow to (0,1), then move to (0,2)
+  pair<int,int> next = Snake::computeNextHead(make_pair(0,0), 'r', 10);
+  s.growTo(next);
+  EXPECT_EQ(s.body().size(), 2u);
+  next = Snake::computeNextHead(s.head(), 'r', 10);
+  s.moveTo(next);
+  EXPECT_EQ(s.body().size(), 2u);
+  EXPECT_EQ(s.head(), make_pair(0,2));
 }
 
 
