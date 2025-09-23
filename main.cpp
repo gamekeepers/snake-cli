@@ -1,6 +1,7 @@
 #include "snake.h"
 
-int main(int argc, char *argv[]) {
-    game_play();
+int main() {
+    Game game;
+    game.run();
     return 0;
 }
