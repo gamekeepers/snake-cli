@@ -20,8 +20,14 @@ class Snake{
         int size=0;
         char direction = 'r';
     public:
+    // default constructor
     Snake(){
         this->body.push_back(make_pair(0,0));
+    }
+
+    // constructor with default position
+    Snake(Cell position){
+        this->body.push_back(position);
     }
 
     int getSize(){
@@ -49,7 +55,20 @@ class Snake{
     }
 
     void set_direction(char direction){
-        
+        if (direction != 'r' && direction != 'l' && direction != 'u' && direction != 'd'){
+            return;
+        }else if(direction == this->direction){
+            
+        }else if(direction == 'r' && this->direction == 'l'){
+            return;
+        }else if (direction == 'l' && this->direction == 'r'){
+            return;
+        }else if (direction == 'u' && this->direction == 'd'){
+            return;
+        }else if (direction == 'd' && this->direction == 'u'){
+            return;
+        }
+
         this->direction = direction;
     }
 
@@ -76,8 +95,62 @@ class Snake{
     
 };
 
+class Game{
+    private:
+    int size=10;
+    // speed
+    std::chrono::milliseconds speed_timer = 500ms;
 
-void input_handler(Snake& snake){
+    public:
+    Snake snake;
+    Cell food;
+    Game(){
+        this->snake = Snake();
+    }
+
+    std::chrono::milliseconds getSpeed(){
+        return this->speed_timer;
+    }
+    int getSize(){
+        return this->size;
+    }
+
+    Cell generate_random_cell(){
+        Cell new_pos = make_pair(rand() % this->getSize(), rand() % this->getSize());
+        while(this->snake.contains(new_pos)){
+            new_pos = make_pair(rand() % this->getSize(), rand() % this->getSize());
+        }
+        return new_pos;
+    }
+
+    bool checkCollission(Cell position){
+        return this->snake.contains(position);
+    }
+
+    void set_direction(char direction){
+        this->snake.set_direction(direction);
+    }
+
+    void render(Cell food){
+        for(size_t i=0;i<this->getSize();i++){
+            for(size_t j=0;j<this->getSize();j++){
+                if (snake.contains(make_pair(int(i), int(j)))) {
+                    cout << "🐍";
+                }else if (i == food.first && j == food.second){
+                    cout << "🍎";
+                }else{
+                    cout << "⬜";
+                }
+        }
+        cout << endl;
+    }
+    sleep_for(this->getSpeed());
+    }
+    
+};
+
+
+void input_handler(Game& game){
     // change terminal settings
     struct termios oldt, newt;
     tcgetattr(STDIN_FILENO, &oldt);
@@ -89,34 +162,13 @@ void input_handler(Snake& snake){
     while (true) {
         char input = getchar();
         if (keymap.find(input) != keymap.end()) {
-            // This now correctly modifies the single, shared 'direction' variable
-            //direction = keymap[input];
-            snake.set_direction(keymap[input]);
-            cout << "changed direction to " << keymap[input] << endl;
+            game.set_direction(keymap[input]);
         }else if (input == 'q'){
             exit(0);
         }
         // You could add an exit condition here, e.g., if (input == 'q') break;
     }
     tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
-}
-
-
-
-Cell get_next_head(Cell current, char direction){
-    Cell next; 
-    if(direction =='r'){
-        next = make_pair(current.first,(current.second+1) % 10);
-    }else if (direction=='l')
-    {
-        next = make_pair(current.first, current.second==0?9:current.second-1);
-    }else if(direction =='d'){
-            next = make_pair((current.first+1)%10,current.second);
-        }else if (direction=='u'){
-            next = make_pair(current.first==0?9:current.first-1, current.second);
-        }
-    return next;
-    
 }
 
 void reset_cursor(){
@@ -128,55 +180,29 @@ void move_snake(deque<Cell> &snake, Cell new_head){
     snake.pop_front();
 }
 
-Cell generate_random_cell(){
-    Cell new_pos = make_pair(rand() % 10, rand() % 10);
-    return new_pos;
-}
-
-
-    
-
-
-void render_game(int size, Snake &snake, Cell food){
-    for(size_t i=0;i<size;i++){
-        for(size_t j=0;j<size;j++){
-            if (snake.contains(make_pair(int(i), int(j)))) {
-                cout << "🐍";
-            }else if (i == food.first && j == food.second){
-                cout << "🍎";
-            }else{
-                cout << "⬜";
-            }
-    }
-    cout << endl;
-}
-}
 
 
 
-void game_play(Snake& snake){
+void game_play(Game& game){
     system("clear");
 
-    Cell food = generate_random_cell();
+    Cell food = game.generate_random_cell();
     while(true){
         reset_cursor();
         // check self collision
-        if (snake.contains(snake.get_next_position())) {
+        if (game.checkCollission(game.snake.get_next_position())) {
             system("clear");
             cout << "Game Over" << endl;
             exit(0);
-        }else if (snake.contains(food)) {
-            food = generate_random_cell();
-            snake.grow();
+        }else if (game.snake.contains(food)) {
+            food = game.generate_random_cell();
+            game.snake.grow();
             
         }else{
-            snake.move();
-            // cout << "adding new head" << head.first<< ","<< head.second<< endl;
+            game.snake.move();
         }
 
-        render_game(10, snake, food);
-        cout << "length of snake: " << snake.getSize() << endl;
-
-        sleep_for(500ms);
+        game.render(food);
+        
     }
 }
