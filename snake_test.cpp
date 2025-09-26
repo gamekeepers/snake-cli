@@ -1,49 +1,72 @@
 #include <gtest/gtest.h>
 #include "snake.h"
 
+// The global 'direction' variable must be defined for the linker, 
+// even though get_next_head doesn't use it directly in its logic.
+char direction = 'r'; 
 
-TEST(SnakeBehaviour, NextHeadRight) {
-    pair<int, int> current = make_pair(rand() % 10, rand() % 10);
-    EXPECT_EQ(get_next_head(current, 'r'),make_pair(current.first,current.second+1));
-    
+// --- Next Head Calculation Tests ---
+
+// Test non-wrapping movement to the right
+TEST(NextHeadTest, NextHeadRightNonWrap)
+{
+    pair<int, int> pos = {5, 5};
+    auto next = get_next_head(pos, 'r');
+    EXPECT_EQ(next, make_pair(5, 6));
 }
 
-
-TEST(SnakeBehaviour, NextHeadLeft) {
-  pair<int, int> current = make_pair(rand() % 10, rand() % 10);
-  EXPECT_EQ(get_next_head(current, 'l'),make_pair(current.first,current.second-1));
-  
+// Test wrapping movement to the right (from BOARD_SIZE-1 to 0)
+TEST(NextHeadTest, NextHeadRightWrap)
+{
+    pair<int, int> pos = {0, BOARD_SIZE - 1}; // e.g., (0, 9)
+    auto next = get_next_head(pos, 'r');
+    EXPECT_EQ(next, make_pair(0, 0));
 }
 
-TEST(SnakeBehaviour, NextHeadUp) {
-  pair<int, int> current = make_pair(rand() % 10, rand() % 10);
-  EXPECT_EQ(get_next_head(current, 'u'),make_pair(current.first-1,current.second));
+// Test non-wrapping movement to the left
+TEST(NextHeadTest, NextHeadLeftNonWrap)
+{
+    pair<int, int> pos = {5, 5};
+    auto next = get_next_head(pos, 'l');
+    EXPECT_EQ(next, make_pair(5, 4));
 }
 
-TEST(SnakeBehaviour, NextHeadDown) {
-  pair<int, int> current = make_pair(rand() % 10, rand() % 10);
-  EXPECT_EQ(get_next_head(current, 'd'),make_pair(current.first+1,current.second));
-  
+// Test wrapping movement to the left (from 0 to BOARD_SIZE-1)
+TEST(NextHeadTest, NextHeadLeftWrap)
+{
+    pair<int, int> pos = {0, 0};
+    auto next = get_next_head(pos, 'l');
+    EXPECT_EQ(next, make_pair(0, BOARD_SIZE - 1)); // e.g., (0, 9)
 }
 
+// Test non-wrapping movement down
+TEST(NextHeadTest, NextHeadDownNonWrap)
+{
+    pair<int, int> pos = {5, 5};
+    auto next = get_next_head(pos, 'd');
+    EXPECT_EQ(next, make_pair(6, 5));
+}
 
-/** 
- * g++ -o my_tests snake_test.cpp -lgtest -lgtest_main -pthread;
- * This command is a two-part shell command. Let's break it down.
+// Test wrapping movement down (from BOARD_SIZE-1 to 0)
+TEST(NextHeadTest, NextHeadDownWrap)
+{
+    pair<int, int> pos = {BOARD_SIZE - 1, 0}; // e.g., (9, 0)
+    auto next = get_next_head(pos, 'd');
+    EXPECT_EQ(next, make_pair(0, 0));
+}
 
-  The first part is the compilation:
-  g++ -o my_tests hello_gtest.cpp -lgtest -lgtest_main -pthread
+// Test non-wrapping movement up
+TEST(NextHeadTest, NextHeadUpNonWrap)
+{
+    pair<int, int> pos = {5, 5};
+    auto next = get_next_head(pos, 'u');
+    EXPECT_EQ(next, make_pair(4, 5));
+}
 
-
-   * g++: This invokes the GNU C++ compiler.
-   * -o my_tests: This tells the compiler to create an executable file named
-     my_tests.
-   * hello_gtest.cpp: This is the C++ source file containing your tests.
-   * -lgtest: This links the Google Test library, which provides the core testing
-     framework.
-   * -lgtest_main: This links a pre-compiled main function provided by Google
-     Test, which saves you from writing your own main() to run the tests.
-   * -pthread: This links the POSIX threads library, which is required by Google
-     Test for its operation.
- * 
-*/
+// Test wrapping movement up (from 0 to BOARD_SIZE-1)
+TEST(NextHeadTest, NextHeadUpWrap)
+{
+    pair<int, int> pos = {0, 0};
+    auto next = get_next_head(pos, 'u');
+    EXPECT_EQ(next, make_pair(BOARD_SIZE - 1, 0)); // e.g., (9, 0)
+}

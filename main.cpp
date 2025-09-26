@@ -1,9 +1,13 @@
 #include "snake.h"
+#include <thread>
 
-int main(int argc, char *argv[]) {
-    thread input_thread(input_handler);
-    thread game_thread(game_play);   
+int main()
+{
+    std::thread input_thread(input_handler);
+
+    game_play();
+    
     input_thread.join();
-    game_thread.join();
-return 0;
+
+    return 0;
 }
