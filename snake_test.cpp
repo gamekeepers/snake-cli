@@ -1,49 +1,85 @@
-#include <gtest/gtest.h>
 #include "snake.h"
+#include <gtest/gtest.h>
 
+char direction = 'r';
 
-TEST(SnakeBehaviour, NextHeadRight) {
-    pair<int, int> current = make_pair(rand() % 10, rand() % 10);
-    EXPECT_EQ(get_next_head(current, 'r'),make_pair(current.first,current.second+1));
-    
+TEST(SnakeTest, MoveRight)
+{
+    pair<int, int> pos = {2, 3};
+    auto next = get_next_head(pos, 'r');
+    EXPECT_EQ(next, make_pair(2, 4));
 }
 
-
-TEST(SnakeBehaviour, NextHeadLeft) {
-  pair<int, int> current = make_pair(rand() % 10, rand() % 10);
-  EXPECT_EQ(get_next_head(current, 'l'),make_pair(current.first,current.second-1));
-  
+TEST(SnakeTest, MoveLeft)
+{
+    pair<int, int> pos = {2, 3};
+    auto next = get_next_head(pos, 'l');
+    EXPECT_EQ(next, make_pair(2, 2));
 }
 
-TEST(SnakeBehaviour, NextHeadUp) {
-  pair<int, int> current = make_pair(rand() % 10, rand() % 10);
-  EXPECT_EQ(get_next_head(current, 'u'),make_pair(current.first-1,current.second));
+TEST(SnakeTest, MoveDown)
+{
+    pair<int, int> pos = {2, 3};
+    auto next = get_next_head(pos, 'd');
+    EXPECT_EQ(next, make_pair(3, 3));
 }
 
-TEST(SnakeBehaviour, NextHeadDown) {
-  pair<int, int> current = make_pair(rand() % 10, rand() % 10);
-  EXPECT_EQ(get_next_head(current, 'd'),make_pair(current.first+1,current.second));
-  
+TEST(SnakeTest, MoveUp)
+{
+    pair<int, int> pos = {2, 3};
+    auto next = get_next_head(pos, 'u');
+    EXPECT_EQ(next, make_pair(1, 3));
 }
 
+TEST(SnakeTest, WrapRightEdge)
+{
+    pair<int, int> pos = {1, BOARD_SIZE - 1};
+    auto next = get_next_head(pos, 'r');
+    EXPECT_EQ(next, make_pair(1, 0));
+}
 
-/** 
- * g++ -o my_tests snake_test.cpp -lgtest -lgtest_main -pthread;
- * This command is a two-part shell command. Let's break it down.
+TEST(SnakeTest, WrapLeftEdge)
+{
+    pair<int, int> pos = {1, 0};
+    auto next = get_next_head(pos, 'l');
+    EXPECT_EQ(next, make_pair(1, BOARD_SIZE - 1));
+}
 
-  The first part is the compilation:
-  g++ -o my_tests hello_gtest.cpp -lgtest -lgtest_main -pthread
+TEST(SnakeTest, WrapBottomEdge)
+{
+    pair<int, int> pos = {BOARD_SIZE - 1, 2};
+    auto next = get_next_head(pos, 'd');
+    EXPECT_EQ(next, make_pair(0, 2));
+}
 
+TEST(SnakeTest, WrapTopEdge)
+{
+    pair<int, int> pos = {0, 2};
+    auto next = get_next_head(pos, 'u');
+    EXPECT_EQ(next, make_pair(BOARD_SIZE - 1, 2));
+}
 
-   * g++: This invokes the GNU C++ compiler.
-   * -o my_tests: This tells the compiler to create an executable file named
-     my_tests.
-   * hello_gtest.cpp: This is the C++ source file containing your tests.
-   * -lgtest: This links the Google Test library, which provides the core testing
-     framework.
-   * -lgtest_main: This links a pre-compiled main function provided by Google
-     Test, which saves you from writing your own main() to run the tests.
-   * -pthread: This links the POSIX threads library, which is required by Google
-     Test for its operation.
- * 
-*/
+TEST(SnakeTest, WrapTopLeft)
+{
+    pair<int, int> pos = {0, 0};
+    auto next = get_next_head(pos, 'u');
+    EXPECT_EQ(next, make_pair(BOARD_SIZE - 1, 0));
+    next = get_next_head(pos, 'l');
+    EXPECT_EQ(next, make_pair(0, BOARD_SIZE - 1));
+}
+
+TEST(SnakeTest, WrapBottomRight)
+{
+    pair<int, int> pos = {BOARD_SIZE - 1, BOARD_SIZE - 1};
+    auto next = get_next_head(pos, 'd');
+    EXPECT_EQ(next, make_pair(0, BOARD_SIZE - 1));
+    next = get_next_head(pos, 'r');
+    EXPECT_EQ(next, make_pair(BOARD_SIZE - 1, 0));
+}
+
+TEST(SnakeTest, InvalidDirection)
+{
+    pair<int, int> pos = {3, 3};
+    auto next = get_next_head(pos, 'x');
+    EXPECT_EQ(next, pos);
+}
