@@ -10,8 +10,10 @@
 #include <algorithm>
 #include <utility>
 #include <fstream>
+
 using namespace std;
 using std::chrono::system_clock;
+using namespace std::this_thread;  
 
 constexpr int BOARD_SIZE = 10;
 
@@ -99,7 +101,6 @@ pair<int, int> get_next_head(pair<int, int> current, char direction)
     return next;
 }
 
-
 pair<int, int> spawn_food(const deque<pair<int, int>> &snake)
 {
     vector<pair<int, int>> freeCells;
@@ -167,6 +168,9 @@ void game_play()
     int level = 1;     
     int baseDelay = 500; 
 
+    auto sleep_duration = 500ms;  
+    int food_eaten = 0;          
+
     while (true)
     {
         pair<int, int> currentHead = snake.back();
@@ -179,7 +183,7 @@ void game_play()
 
         if (direction == 'P')
         {
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            sleep_for(100ms);
             continue;
         }
 
@@ -238,11 +242,17 @@ void game_play()
         if (willGrow)
         {
             score += 1;
+            food_eaten++; 
             food = spawn_food(snake);
 
             if (score % 3 == 0)
             {
                 poison = spawn_food(snake);
+            }
+
+            if (food_eaten % 10 == 0 && sleep_duration > 100ms)
+            {
+                sleep_duration -= 50ms;
             }
 
             if (food.first == -1)
@@ -272,8 +282,9 @@ void game_play()
         render_game(BOARD_SIZE, snake, food, poison, score);
 
         cout << "Level: " << level << "\n";
+        cout << "Speed: " << sleep_duration.count() << " ms per frame\n"; 
 
         int delay_ms = max(50, baseDelay - (level - 1) * 50 - (int)snake.size() * 5);
-        std::this_thread::sleep_for(std::chrono::milliseconds(delay_ms));
+        sleep_for(min(sleep_duration, chrono::milliseconds(delay_ms)));
     }
 }
