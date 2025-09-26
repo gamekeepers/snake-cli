@@ -1,3 +1,8 @@
+
+
+#ifndef SNAKE_H
+#define SNAKE_H
+
 #include <iostream>
 #include <vector>
 #include <chrono>
@@ -11,19 +16,56 @@
 #include <utility>
 #include <fstream>
 using namespace std;
-using std::chrono::system_clock;
 
-constexpr int BOARD_SIZE = 10; // Board size
+constexpr int BOARD_SIZE = 10;
+extern char direction;
 
-char direction = 'r';
+// ------------------ Snake Class ------------------
+class Snake
+{
+private:
+    deque<pair<int, int>> body;
 
-// Input handler (runs in a separate thread)
-void input_handler()
+public:
+    Snake()
+    {
+        body.push_back({0, 0}); // start at (0,0)
+    }
+
+    void grow(pair<int, int> newHead)
+    {
+        body.push_back(newHead);
+    }
+
+    void move(pair<int, int> newHead)
+    {
+        body.push_back(newHead);
+        body.pop_front();
+    }
+
+    pair<int, int> getHead() const
+    {
+        return body.back();
+    }
+
+    int getSize() const
+    {
+        return body.size();
+    }
+
+    const deque<pair<int, int>> &getBody() const
+    {
+        return body;
+    }
+};
+
+// ------------------ Input Handling ------------------
+inline void input_handler()
 {
     struct termios oldt, newt;
     tcgetattr(STDIN_FILENO, &oldt);
     newt = oldt;
-    newt.c_lflag &= ~(ICANON | ECHO); // turn off canonical mode and echo
+    newt.c_lflag &= ~(ICANON | ECHO);
     tcsetattr(STDIN_FILENO, TCSANOW, &newt);
 
     map<char, char> keymap = {{'d', 'r'}, {'a', 'l'}, {'w', 'u'}, {'s', 'd'}, {'q', 'q'}};
@@ -42,92 +84,72 @@ void input_handler()
         else if (input == 'p')
         {
             if (direction != 'P')
-                direction = 'P'; // pause
+                direction = 'P';
             else
-                direction = 'r'; // resume moving right or previous direction
+                direction = 'r';
         }
     }
     tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
 }
 
-// Render the board
-void render_game(int size, deque<pair<int, int>> &snake, pair<int, int> food, pair<int, int> poison, int score)
+// ------------------ Rendering ------------------
+inline void render_game(int size, const Snake &snake, pair<int, int> food,
+                        pair<int, int> poison, int score)
 {
+    const auto &body = snake.getBody();
     for (int i = 0; i < size; ++i)
     {
         for (int j = 0; j < size; ++j)
         {
             if (i == food.first && j == food.second)
-            {
                 cout << "🍎";
-            }
             else if (i == poison.first && j == poison.second)
-            {
                 cout << "☠️";
-            }
-            else if (find(snake.begin(), snake.end(), make_pair(i, j)) != snake.end())
-            {
+            else if (find(body.begin(), body.end(), make_pair(i, j)) != body.end())
                 cout << "🐍";
-            }
             else
-            {
                 cout << "⬜";
-            }
         }
         cout << '\n';
     }
-    cout << "Length: " << snake.size() << "  Score: " << score << "\n";
+    cout << "Length: " << snake.getSize() << "  Score: " << score << "\n";
 }
 
-// Compute next head (wraps around)
-pair<int, int> get_next_head(pair<int, int> current, char direction)
+// ------------------ Game Helpers ------------------
+inline pair<int, int> get_next_head(pair<int, int> current, char direction)
 {
-    pair<int, int> next;
     if (direction == 'r')
-    {
-        next = make_pair(current.first, (current.second + 1) % BOARD_SIZE);
-    }
+        return {current.first, (current.second + 1) % BOARD_SIZE};
     else if (direction == 'l')
-    {
-        next = make_pair(current.first, current.second == 0 ? BOARD_SIZE - 1 : current.second - 1);
-    }
+        return {current.first, current.second == 0 ? BOARD_SIZE - 1 : current.second - 1};
     else if (direction == 'd')
-    {
-        next = make_pair((current.first + 1) % BOARD_SIZE, current.second);
-    }
+        return {(current.first + 1) % BOARD_SIZE, current.second};
+    else if (direction == 'u')
+        return {current.first == 0 ? BOARD_SIZE - 1 : current.first - 1, current.second};
+    else if (direction == 'P') // <-- pause means no movement
+        return current;
     else
-    { // 'u'
-        next = make_pair(current.first == 0 ? BOARD_SIZE - 1 : current.first - 1, current.second);
-    }
-    return next;
+        return current; // safe fallback
 }
 
-// Spawn food at a location not occupied by the snake
-pair<int, int> spawn_food(const deque<pair<int, int>> &snake)
+inline pair<int, int> spawn_food(const deque<pair<int, int>> &body)
 {
     vector<pair<int, int>> freeCells;
     for (int i = 0; i < BOARD_SIZE; ++i)
-    {
         for (int j = 0; j < BOARD_SIZE; ++j)
-        {
-            pair<int, int> pos = make_pair(i, j);
-            if (find(snake.begin(), snake.end(), pos) == snake.end())
-            {
-                freeCells.push_back(pos);
-            }
-        }
-    }
+            if (find(body.begin(), body.end(), make_pair(i, j)) == body.end())
+                freeCells.push_back({i, j});
 
     if (freeCells.empty())
-        return make_pair(-1, -1); // board full
+        return {-1, -1};
 
-    int idx = rand() % freeCells.size();
-    return freeCells[idx];
+    return freeCells[rand() % freeCells.size()];
 }
-// ✅ Save score to file
-void save_score(int score)
+
+// ------------------ Score Management ------------------
+inline void save_score(int score)
 {
-    ofstream file("scores.txt", ios::app); // append mode
+    ofstream file("scores.txt", ios::app);
     if (file.is_open())
     {
         file << score << "\n";
@@ -135,158 +157,125 @@ void save_score(int score)
     }
 }
 
-// ✅ Load scores and return top 10
-vector<int> load_top_scores()
+inline vector<int> load_top_scores()
 {
     ifstream file("scores.txt");
     vector<int> scores;
     int s;
-
     while (file >> s)
-    {
         scores.push_back(s);
-    }
     file.close();
 
-    // Sort descending
     sort(scores.begin(), scores.end(), greater<int>());
-
-    // Keep only top 10
     if (scores.size() > 10)
-    {
         scores.resize(10);
-    }
 
     return scores;
 }
 
-void game_play()
+// ------------------ Game Loop ------------------
+inline void game_play()
 {
     system("clear");
-    deque<pair<int, int>> snake;
-    snake.push_back(make_pair(0, 0)); // starting segment
+    Snake snake;
+    pair<int, int> food = spawn_food(snake.getBody());
+    pair<int, int> poison = spawn_food(snake.getBody());
 
-    pair<int, int> food = spawn_food(snake);
-    pair<int, int> poison = spawn_food(snake); // spawn initial poison
-
-    int score = 0;
-    int level = 1;       // starting level
-    int baseDelay = 500; // initial delay in ms
+    int score = 0, level = 1, baseDelay = 500;
 
     while (true)
     {
-        pair<int, int> currentHead = snake.back();
-        pair<int, int> nextHead = get_next_head(currentHead, direction);
+        auto currentHead = snake.getHead();
+        auto nextHead = get_next_head(currentHead, direction);
 
-        cout << "\033[H"; // move cursor to top-left
+        cout << "\033[H";
+
+        if (direction == 'P')
+        {
+            this_thread::sleep_for(chrono::milliseconds(100));
+            continue;
+        }
 
         bool willGrow = (nextHead == food);
         bool collision = false;
-
-        // ✅ Pause logic
-        if (direction == 'P')
-        {
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
-            continue; // skip movement, freeze game
-        }
+        const auto &body = snake.getBody();
 
         if (willGrow)
         {
-            if (find(snake.begin(), snake.end(), nextHead) != snake.end())
+            if (find(body.begin(), body.end(), nextHead) != body.end())
                 collision = true;
         }
         else
         {
-            auto itStart = snake.begin();
-            if (!snake.empty())
-                ++itStart; // skip tail
-            if (find(itStart, snake.end(), nextHead) != snake.end())
+            auto itStart = body.begin();
+            if (!body.empty())
+                ++itStart;
+            if (find(itStart, body.end(), nextHead) != body.end())
                 collision = true;
         }
 
-        // Snake collides with itself
         if (collision)
         {
             system("clear");
             cout << "Game Over\n";
-            cout << "Final Length: " << snake.size() << "  Final Score: " << score << "\n";
-
+            cout << "Final Length: " << snake.getSize() << "  Final Score: " << score << "\n";
             save_score(score);
 
             cout << "\n=== Top 10 Scores ===\n";
-            vector<int> topScores = load_top_scores();
+            auto topScores = load_top_scores();
             for (int i = 0; i < topScores.size(); i++)
-            {
                 cout << (i + 1) << ". " << topScores[i] << "\n";
-            }
-
             exit(0);
         }
 
-        // Snake eats poison
         if (nextHead == poison)
         {
             system("clear");
             cout << "Snake ate poison ☠️ Game Over!\n";
-            cout << "Final Length: " << snake.size() << "  Final Score: " << score << "\n";
-
+            cout << "Final Length: " << snake.getSize() << "  Final Score: " << score << "\n";
             save_score(score);
 
             cout << "\n=== Top 10 Scores ===\n";
-            vector<int> topScores = load_top_scores();
+            auto topScores = load_top_scores();
             for (int i = 0; i < topScores.size(); i++)
-            {
                 cout << (i + 1) << ". " << topScores[i] << "\n";
-            }
-
             exit(0);
         }
 
-        snake.push_back(nextHead);
-
         if (willGrow)
         {
-            score += 1;
-            food = spawn_food(snake);
+            snake.grow(nextHead);
+            score++;
+            food = spawn_food(snake.getBody());
 
-            // 🔹 Respawn poison every 3 points
             if (score % 3 == 0)
-            {
-                poison = spawn_food(snake);
-            }
+                poison = spawn_food(snake.getBody());
 
             if (food.first == -1)
             {
                 system("clear");
-                cout << "You Win! Final Length: " << snake.size() << "  Final Score: " << score << "\n";
-
+                cout << "You Win! Final Length: " << snake.getSize() << "  Final Score: " << score << "\n";
                 save_score(score);
 
                 cout << "\n=== Top 10 Scores ===\n";
-                vector<int> topScores = load_top_scores();
+                auto topScores = load_top_scores();
                 for (int i = 0; i < topScores.size(); i++)
-                {
                     cout << (i + 1) << ". " << topScores[i] << "\n";
-                }
-
                 exit(0);
             }
         }
         else
         {
-            snake.pop_front();
+            snake.move(nextHead);
         }
 
-        // Level calculation: increase level every 5 points
         level = (score / 5) + 1;
-
-        // Render game (with poison + score)
         render_game(BOARD_SIZE, snake, food, poison, score);
-
         cout << "Level: " << level << "\n";
 
-        // Dynamic speed: faster as level increases (min 50ms)
-        int delay_ms = max(50, baseDelay - (level - 1) * 50 - (int)snake.size() * 5);
-        std::this_thread::sleep_for(std::chrono::milliseconds(delay_ms));
+        int delay_ms = max(50, baseDelay - (level - 1) * 50 - snake.getSize() * 5);
+        this_thread::sleep_for(chrono::milliseconds(delay_ms));
     }
 }
+
+#endif
