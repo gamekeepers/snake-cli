@@ -1,101 +1,192 @@
+#ifndef SNAKE_H
+#define SNAKE_H
+
 #include <iostream>
 #include <vector>
 #include <chrono>
 #include <thread>
-#include <stdlib.h>
-#include <termios.h>
-#include <unistd.h> // for system clear
+#include <cstdlib>
 #include <map>
 #include <deque>
 #include <algorithm>
+#include <atomic>
+
+#ifdef _WIN32
+#include <conio.h>
+#include <windows.h>
+#else
+#include <termios.h>
+#include <unistd.h>
+#endif
+
 using namespace std;
-using std::chrono::system_clock;
+using namespace std::chrono_literals;
 using namespace std::this_thread;
-char direction='r';
 
-
-void input_handler(){
-    // change terminal settings
-    struct termios oldt, newt;
-    tcgetattr(STDIN_FILENO, &oldt);
-    newt = oldt;
-    // turn off canonical mode and echo
-    newt.c_lflag &= ~(ICANON | ECHO);
-    tcsetattr(STDIN_FILENO, TCSANOW, &newt);
-    map<char, char> keymap = {{'d', 'r'}, {'a', 'l'}, {'w', 'u'}, {'s', 'd'}, {'q', 'q'}};
-    while (true) {
-        char input = getchar();
-        if (keymap.find(input) != keymap.end()) {
-            // This now correctly modifies the single, shared 'direction' variable
-            direction = keymap[input];
-        }else if (input == 'q'){
-            exit(0);
-        }
-        // You could add an exit condition here, e.g., if (input == 'q') break;
+class Snake {
+public:
+    explicit Snake(int boardSize)
+        : boardSize_(boardSize) {
+        bodySegments_.push_back(make_pair(0, 0));
     }
-    tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
-}
 
+    static pair<int, int> computeNextHead(const pair<int, int>& currentHead, char moveDirection, int boardSize) {
+        pair<int, int> nextHead = currentHead;
+        if (moveDirection == 'r') {
+            nextHead = make_pair(currentHead.first, (currentHead.second + 1) % boardSize);
+        } else if (moveDirection == 'l') {
+            nextHead = make_pair(currentHead.first, currentHead.second == 0 ? boardSize - 1 : currentHead.second - 1);
+        } else if (moveDirection == 'd') {
+            nextHead = make_pair((currentHead.first + 1) % boardSize, currentHead.second);
+        } else if (moveDirection == 'u') {
+            nextHead = make_pair(currentHead.first == 0 ? boardSize - 1 : currentHead.first - 1, currentHead.second);
+        }
+        return nextHead;
+    }
 
-void render_game(int size, deque<pair<int, int>> &snake, pair<int, int> food){
-    for(size_t i=0;i<size;i++){
-        for(size_t j=0;j<size;j++){
-            if (i == food.first && j == food.second){
-                cout << "🍎";
-            }else if (find(snake.begin(), snake.end(), make_pair(int(i), int(j))) != snake.end()) {
-                cout << "🐍";
-            }else{
-                cout << "⬜";
+    const deque<pair<int, int>>& body() const { return bodySegments_; }
+    pair<int, int> head() const { return bodySegments_.back(); }
+
+    bool contains(const pair<int, int>& cellPos) const {
+        return find(bodySegments_.begin(), bodySegments_.end(), cellPos) != bodySegments_.end();
+    }
+
+    bool willCollideWithSelf(const pair<int, int>& nextHead) const {
+        return contains(nextHead);
+    }
+
+    void growTo(const pair<int, int>& nextHead) {
+        bodySegments_.push_back(nextHead);
+    }
+
+    void moveTo(const pair<int, int>& nextHead) {
+        bodySegments_.push_back(nextHead);
+        bodySegments_.pop_front();
+    }
+
+private:
+    int boardSize_;
+    deque<pair<int, int>> bodySegments_;
+};
+
+class Renderer {
+public:
+    void render(int boardSize, const deque<pair<int, int>>& snakeBody, const pair<int, int>& foodPos) {
+        cout << "Snake Game" << endl;
+        for (size_t row = 0; row < static_cast<size_t>(boardSize); row++) {
+            for (size_t col = 0; col < static_cast<size_t>(boardSize); col++) {
+                if (static_cast<int>(row) == foodPos.first && static_cast<int>(col) == foodPos.second) {
+                    cout << "🍎";
+                } else if (find(snakeBody.begin(), snakeBody.end(), make_pair(int(row), int(col))) != snakeBody.end()) {
+                    cout << "🐍";
+                } else {
+                    cout << "⬜";
+                }
             }
-    }
-    cout << endl;
-}
-}
-
-pair<int,int> get_next_head(pair<int,int> current, char direction){
-    pair<int, int> next; 
-    if(direction =='r'){
-        next = make_pair(current.first,(current.second+1) % 10);
-    }else if (direction=='l')
-    {
-        next = make_pair(current.first, current.second==0?9:current.second-1);
-    }else if(direction =='d'){
-            next = make_pair((current.first+1)%10,current.second);
-        }else if (direction=='u'){
-            next = make_pair(current.first==0?9:current.first-1, current.second);
+            cout << endl;
         }
-    return next;
-    
-}
-
-
-
-void game_play(){
-    system("clear");
-    deque<pair<int, int>> snake;
-    snake.push_back(make_pair(0,0));
-
-    pair<int, int> food = make_pair(rand() % 10, rand() % 10);
-    for(pair<int, int> head=make_pair(0,1);; head = get_next_head(head, direction)){
-        // send the cursor to the top
-        cout << "\033[H";
-        // check self collision
-        if (find(snake.begin(), snake.end(), head) != snake.end()) {
-            system("clear");
-            cout << "Game Over" << endl;
-            exit(0);
-        }else if (head.first == food.first && head.second == food.second) {
-            // grow snake
-            food = make_pair(rand() % 10, rand() % 10);
-            snake.push_back(head);            
-        }else{
-            // move snake
-            snake.push_back(head);
-            snake.pop_front();
-        }
-        render_game(10, snake, food);
-        cout << "length of snake: " << snake.size() << endl;
-    
-        sleep_for(500ms);
     }
+};
+
+class InputHandler {
+public:
+    InputHandler() : currentDirection_('r') {}
+
+    char direction() const { return currentDirection_.load(); }
+
+    void run() {
+#ifdef _WIN32
+        map<char, char> keyMap = {{'d', 'r'}, {'a', 'l'}, {'w', 'u'}, {'s', 'd'}, {'q', 'q'}};
+        for (;;) {
+            if (_kbhit()) {
+                char userInput = _getch();
+                if (keyMap.find(userInput) != keyMap.end()) {
+                    currentDirection_.store(keyMap[userInput]);
+                } else if (userInput == 'q') {
+                    system("cls");
+                    exit(0);
+                }
+            }
+            sleep_for(10ms);
+        }
+#else
+        struct termios oldSettings, newSettings;
+        tcgetattr(STDIN_FILENO, &oldSettings);
+        newSettings = oldSettings;
+        newSettings.c_lflag &= ~(ICANON | ECHO);
+        tcsetattr(STDIN_FILENO, TCSANOW, &newSettings);
+        map<char, char> keyMap = {{'d', 'r'}, {'a', 'l'}, {'w', 'u'}, {'s', 'd'}, {'q', 'q'}};
+        while (true) {
+            char userInput = getchar();
+            if (keyMap.find(userInput) != keyMap.end()) {
+                currentDirection_.store(keyMap[userInput]);
+            } else if (userInput == 'q') {
+                tcsetattr(STDIN_FILENO, TCSANOW, &oldSettings);
+                exit(0);
+            }
+        }
+        tcsetattr(STDIN_FILENO, TCSANOW, &oldSettings);
+#endif
+    }
+
+private:
+    atomic<char> currentDirection_;
+};
+
+class Game {
+public:
+    Game(int boardSize = 8)
+        : boardSize_(boardSize),
+          snake_(boardSize_),
+          inputHandler_(),
+          renderer_(),
+          foodPos_(make_pair(rand() % boardSize_, rand() % boardSize_)) {}
+
+    void runInput() { inputHandler_.run(); }
+
+    void runLoop() {
+#ifdef _WIN32
+        system("cls");
+#else
+        system("clear");
+#endif
+        pair<int, int> currentHead = make_pair(0, 1);
+        for (;;) {
+            cout << "\033[H";
+            char moveDir = inputHandler_.direction();
+            currentHead = Snake::computeNextHead(currentHead, moveDir, boardSize_);
+
+            if (snake_.willCollideWithSelf(currentHead)) {
+#ifdef _WIN32
+                system("cls");
+#else
+                system("clear");
+#endif
+                cout << "Game Over" << endl;
+                exit(0);
+            } else if (currentHead.first == foodPos_.first && currentHead.second == foodPos_.second) {
+                foodPos_ = make_pair(rand() % boardSize_, rand() % boardSize_);
+                snake_.growTo(currentHead);
+            } else {
+                snake_.moveTo(currentHead);
+            }
+
+            renderer_.render(boardSize_, snake_.body(), foodPos_);
+            cout << "Snake length: " << snake_.body().size() << endl;
+            sleep_for(500ms);
+        }
+    }
+
+private:
+    int boardSize_;
+    Snake snake_;
+    InputHandler inputHandler_;
+    Renderer renderer_;
+    pair<int, int> foodPos_;
+};
+
+inline pair<int,int> get_next_head(pair<int,int> currentHead, char moveDirection){
+    return Snake::computeNextHead(currentHead, moveDirection, 10);
 }
+
+#endif // SNAKE_H
