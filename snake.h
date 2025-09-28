@@ -50,12 +50,21 @@ void render_game(int size, deque<pair<int, int>> &snake, pair<int, int> food) {
     }
 }
 
+// Generate food that does not overlap with snake
+pair<int, int> generate_food(deque<pair<int, int>> &snake) {
+    pair<int, int> food;
+    do {
+        food = {rand() % 10, rand() % 10};
+    } while (find(snake.begin(), snake.end(), food) != snake.end());
+    return food;
+}
+
 void game_play() {
     system("clear");
     deque<pair<int, int>> snake;
     snake.push_back({0, 0});
 
-    pair<int, int> food = {rand() % 10, rand() % 10};
+    pair<int, int> food = generate_food(snake);
 
     chrono::milliseconds sleep_duration(500); // Initial speed
 
@@ -73,9 +82,9 @@ void game_play() {
         if (head == food) {
             snake.push_back(head);
             score += 10;
-            food = {rand() % 10, rand() % 10};
+            food = generate_food(snake); // ensure food not inside snake
 
-            // Increase difficulty: decrease sleep duration
+            // Increase difficulty
             if (sleep_duration.count() > 50) sleep_duration -= chrono::milliseconds(10);
         } else {
             snake.push_back(head);
