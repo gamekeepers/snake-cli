@@ -1,13 +1,18 @@
 #include "snake.h"
-#include <thread>
+#include <windows.h>
 
 int main(int argc, char *argv[]) {
-    // Start input thread first so it can capture keys
-    std::thread input_thread(input_handler);
-    input_thread.detach(); // run in background
+    // Enable ANSI color support in Windows console
+    HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+    DWORD dwMode = 0;
+    GetConsoleMode(hOut, &dwMode);
+    dwMode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
+    SetConsoleMode(hOut, dwMode);
 
-    // Run the game (this will return when game ends)
-    game_play();
-
+    std::atomic<bool> running(true);
+    std::thread input_thread(input_handler, std::ref(running));
+    std::thread game_thread(game_play, std::ref(running));   
+    input_thread.join();
+    game_thread.join();
     return 0;
 }

@@ -1,265 +1,195 @@
 #pragma once
-
 #include <iostream>
 #include <vector>
 #include <chrono>
 #include <thread>
-#include <stdlib.h>
+#include <cstdlib>
+#include <conio.h>
 #include <map>
 #include <deque>
 #include <algorithm>
-#include <fstream>
-#include <conio.h>   
-#include <windows.h> 
 #include <atomic>
+#include <fstream>
 #include <ctime>
+
+// Prevent Windows header conflicts
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#define byte win_byte_override
+#include <windows.h>
+#undef byte
 
 using namespace std;
 using std::chrono::system_clock;
 using namespace std::this_thread;
 
-#define RESET   "\033[0m"
-#define RED     "\033[31m"
-#define GREEN   "\033[32m"
-#define YELLOW  "\033[33m"
-#define BLUE    "\033[34m"
-#define MAGENTA "\033[35m"
-#define CYAN    "\033[36m"
-#define BOLD    "\033[1m"
+atomic<char> direction('r');
+atomic<bool> paused(false);
 
-constexpr int GRID_SIZE = 10;
+const int BOARD_SIZE = 10;  // board size
+const string GREEN_BG = "\033[42m";
+const string RED_BG   = "\033[41m";
+const string BLUE_BG  = "\033[44m";
+const string RESET    = "\033[0m";
 
-static std::atomic<char> direction{'n'}; 
-static std::atomic<bool> paused{false};
-static std::atomic<int> score{0};
-static int speed = 200; 
-static vector<int> highScores;
-static std::atomic<char> last_direction{'n'}; 
+vector<int> high_scores;
 
-// Load high scores from file
-void load_scores();
-// Save high scores to file
-void save_scores();
-// Handles keyboard input (direction, pause, quit)
-void input_handler();
-// Draws the game board and UI
-void render_game(int size, deque<pair<int,int>>& snake, pair<int,int> food, pair<int,int> poison);
-// Returns next head position based on direction
-pair<int,int> get_next_head(pair<int,int> current, char dir);
-// Generate random food/poison position
-pair<int,int> generate_food(int size, deque<pair<int,int>> &snake);
-// Main game loop
-void game_play();
-
-inline void load_scores(){
-    highScores.clear();
-    ifstream in("scores.txt");
-    if(!in.is_open()) return;
+void load_high_scores() {
+    ifstream in("highscores.txt");
     int s;
-    while(in>>s) highScores.push_back(s);
-    in.close();
-}
-
-inline void save_scores(){
-    highScores.push_back((int)score.load());
-    sort(highScores.rbegin(), highScores.rend());
-    if(highScores.size()>10) highScores.resize(10);
-    ofstream out("scores.txt");
-    for(auto s:highScores) out<<s<<"\n";
-    out.close();
-}
-
-inline bool is_opposite(char a, char b){
-    if(a=='u' && b=='d') return true;
-    if(a=='d' && b=='u') return true;
-    if(a=='l' && b=='r') return true;
-    if(a=='r' && b=='l') return true;
-    return false;
-}
-
-inline void input_handler(){
-    while(true){
-        if(_kbhit()){
-            int c = _getch();
-            if(c == 0 || c == 224){ 
-                int c2 = _getch();
-                char new_dir = direction.load();
-                if(c2 == 72) new_dir = 'u';      
-                else if(c2 == 80) new_dir = 'd'; 
-                else if(c2 == 75) new_dir = 'l'; 
-                else if(c2 == 77) new_dir = 'r';
-
-                char cur = last_direction.load();
-                if(cur!='n' && is_opposite(cur, new_dir)) {
-                } else {
-                    direction.store(new_dir);
-                    last_direction.store(new_dir);
-                }
-            } else {
-                char input = (char)c;
-                char new_dir = direction.load();
-                if(input=='w'||input=='W'||input=='o'||input=='O') new_dir = 'u';
-                else if(input=='s'||input=='S'||input=='p'||input=='P') new_dir = 'd';
-                else if(input=='a'||input=='A'||input=='k'||input=='K') new_dir = 'l';
-                else if(input=='d'||input=='D'||input=='l'||input=='L') new_dir = 'r';
-                else if(input=='x'||input=='X'){ 
-                    paused.store(!paused.load());
-                }
-                else if(input=='q'||input=='Q'){ 
-                    save_scores();
-                    ExitProcess(0);
-                }
-
-                if(new_dir=='u'||new_dir=='d'||new_dir=='l'||new_dir=='r'){
-                    char cur = last_direction.load();
-                    if(cur!='n' && is_opposite(cur, new_dir)){
-                    } else {
-                        direction.store(new_dir);
-                        last_direction.store(new_dir);
-                    }
-                }
-            }
-        }
-        Sleep(20);
+    while (in >> s) {
+        high_scores.push_back(s);
+    }
+    sort(high_scores.rbegin(), high_scores.rend());
+    if (high_scores.size() > 10) {
+        high_scores.resize(10);
     }
 }
 
-inline void render_game(int size, deque<pair<int, int>> &snake, pair<int, int> food, pair<int,int> poison){
-    COORD coord = {0,0};
-    SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
+void save_high_scores() {
+    ofstream out("highscores.txt");
+    for (int s : high_scores) {
+        out << s << endl;
+    }
+}
 
-    cout<<BOLD<<CYAN<<"===== 🐍 Snake CLI Game ====="<<RESET<<endl;
+void display_high_scores() {
+    cout << "Top 10 Highest Scores:" << endl;
+    for (size_t i = 0; i < high_scores.size(); ++i) {
+        cout << (i + 1) << ". " << high_scores[i] << endl;
+    }
+}
 
-    cout << "+";
-    for(int c=0;c<size;c++) cout << "-";
-    cout << "+" << endl;
+void input_handler(atomic<bool>& running) {
+    while (running) {
+        if (_kbhit()) {
+            char ch = _getch();
+            if (ch == 224 || ch == 0) {  // Extended key for arrows
+                ch = _getch();
+                switch (ch) {
+                    case 72: direction = 'u'; break;  // Up
+                    case 80: direction = 'd'; break;  // Down
+                    case 75: direction = 'l'; break;  // Left
+                    case 77: direction = 'r'; break;  // Right
+                }
+            } else {
+                if (ch == 27) {  // ESC
+                    running = false;
+                    break;
+                } else if (ch == ' ') {  // Space for pause/resume
+                    paused = !paused.load();
+                }
+            }
+        }
+        sleep_for(10ms);  // Small sleep to prevent CPU hogging
+    }
+}
 
-    for(int i=0;i<size;i++){
-        cout << "|";
-        for(int j=0;j<size;j++){
-            if (i == food.first && j == food.second){
-                cout << GREEN << "🍎" << RESET;
-            } else if (i == poison.first && j == poison.second){
-                cout << RED << "💀" << RESET;
+void render_game(const deque<pair<int, int>>& snake, pair<int, int> food, pair<int, int> poison, int score) {
+    cout << "\033[H";  // Move cursor to top-left (instead of clearing)
+
+    for (int i = 0; i < BOARD_SIZE; ++i) {
+        for (int j = 0; j < BOARD_SIZE; ++j) {
+            if (i == food.first && j == food.second) {
+                cout << GREEN_BG << "  " << RESET;
+            } else if (i == poison.first && j == poison.second) {
+                cout << RED_BG << "  " << RESET;
             } else if (find(snake.begin(), snake.end(), make_pair(i, j)) != snake.end()) {
-                if(snake.back().first==i && snake.back().second==j)
-                    cout << YELLOW << "🐍" << RESET;
-                else
-                    cout << YELLOW << "o" << RESET;
+                cout << GREEN_BG << "  " << RESET;
             } else {
-                cout << " ";
+                cout << BLUE_BG << "  " << RESET;
             }
         }
-        cout << "|" << endl;
+        cout << endl;
     }
-
-    cout << "+";
-    for(int c=0;c<size;c++) cout << "-";
-    cout << "+" << endl;
-
-    cout << BOLD << "Score: " << score.load() << RESET
-         << " | Length: " << snake.size()
-         << " | Speed (ms): " << speed
-         << endl;
-
-    if(direction.load()=='n') cout<<MAGENTA<<"Press O/P/K/L (or arrows/WASD) to start!"<<RESET<<endl;
-    if(paused.load()) cout<<MAGENTA<<"[PAUSED] Press 'x' to resume"<<RESET<<endl;
-    cout<<CYAN<<"Controls: O=Up, P=Down, K=Left, L=Right, X=Pause, Q=Quit"<<RESET<<endl;
+    cout << "Score: " << score << endl;
 }
 
-inline pair<int,int> get_next_head(pair<int,int> current, char dir){
-    if(dir=='n') return current;  
-    pair<int, int> next = current;
-    if(dir =='r'){
-        next = make_pair(current.first, (current.second + 1) % GRID_SIZE);
-    } else if (dir=='l'){
-        next = make_pair(current.first, current.second==0 ? GRID_SIZE-1 : current.second-1);
-    } else if(dir =='d'){
-        next = make_pair((current.first + 1) % GRID_SIZE, current.second);
-    } else if(dir =='u'){
-        next = make_pair(current.first==0 ? GRID_SIZE-1 : current.first-1, current.second);
+pair<int, int> get_next_head(pair<int, int> current, char dir) {
+    pair<int, int> next;
+    if (dir == 'r') {
+        next = make_pair(current.first, (current.second + 1) % BOARD_SIZE);
+    } else if (dir == 'l') {
+        next = make_pair(current.first, (current.second == 0 ? BOARD_SIZE - 1 : current.second - 1));
+    } else if (dir == 'd') {
+        next = make_pair((current.first + 1) % BOARD_SIZE, current.second);
+    } else if (dir == 'u') {
+        next = make_pair((current.first == 0 ? BOARD_SIZE - 1 : current.first - 1), current.second);
     }
     return next;
 }
 
-inline pair<int,int> generate_food(int size, deque<pair<int,int>> &snake){
-    pair<int,int> f;
+void game_play(atomic<bool>& running) {
+    srand(static_cast<unsigned int>(time(NULL)));
+    load_high_scores();
+
+    // Hide cursor for smooth animation
+    cout << "\033[?25l";
+
+    deque<pair<int, int>> snake;
+    snake.push_back(make_pair(0, 0));
+
+    pair<int, int> food;
     do {
-        f = make_pair(rand()%size, rand()%size);
-    } while(find(snake.begin(), snake.end(), f)!=snake.end());
-    return f;
-}
+        food = make_pair(rand() % BOARD_SIZE, rand() % BOARD_SIZE);
+    } while (find(snake.begin(), snake.end(), food) != snake.end());
 
-inline void game_play(){
-    system("cls");
+    pair<int, int> poison;
+    do {
+        poison = make_pair(rand() % BOARD_SIZE, rand() % BOARD_SIZE);
+    } while (find(snake.begin(), snake.end(), poison) != snake.end() || poison == food);
 
-    srand((unsigned)time(nullptr));
-    load_scores();
+    int score = 0;
+    bool game_over = false;
 
-    deque<pair<int,int>> snake;
-    int mid = GRID_SIZE/2;
-    snake.push_back(make_pair(mid, mid-2));
-    snake.push_back(make_pair(mid, mid-1));
-    snake.push_back(make_pair(mid, mid));
-
-    pair<int, int> food = generate_food(GRID_SIZE, snake);
-    pair<int, int> poison = generate_food(GRID_SIZE, snake);
-
-    score.store(0);
-    direction.store('n'); 
-    last_direction.store('n');
-
-    while(_kbhit()) _getch();
-
-    render_game(GRID_SIZE, snake, food, poison);
-
-    while(direction.load() == 'n') {
-        Sleep(30);
-    }
-
-    while(true){
-        if(paused.load()){
-            render_game(GRID_SIZE, snake, food, poison);
-            Sleep(100);
-            continue;
+    pair<int, int> head = get_next_head(snake.back(), direction);
+    while (running) {
+        if (find(snake.begin(), snake.end(), head) != snake.end() || head == poison) {
+            game_over = true;
+            break;
         }
-
-        char cur_dir = direction.load();
-        pair<int,int> head = get_next_head(snake.back(), cur_dir);
-
-        if(find(snake.begin(), snake.end(), head)!=snake.end()){
-            system("cls"); 
-            cout << RED << BOLD << "💥 Game Over! Final Score: " << score.load() << RESET << endl;
-            save_scores();
-            cout<<GREEN<<BOLD<<"🏆 High Scores:"<<RESET<<endl;
-            for(size_t i=0;i<highScores.size();i++)
-                cout<<i+1<<". "<<highScores[i]<<endl;
-            return;
-        }
-
-        if(head==food){
-            score.fetch_add(10);
-            snake.push_back(head); // grow
-            food = generate_food(GRID_SIZE, snake);
-            poison = generate_food(GRID_SIZE, snake);
-            if(score.load()%30==0 && speed>60) speed -= 30;
-        }
-        else if(head==poison){
-            system("cls");
-            cout << RED << BOLD << "☠️ You ate poison! Game Over!" << RESET << endl;
-            save_scores();
-            cout<<GREEN<<BOLD<<"🏆 High Scores:"<<RESET<<endl;
-            for(size_t i=0;i<highScores.size();i++)
-                cout<<i+1<<". "<<highScores[i]<<endl;
-            return;
-        }
-        else {
+        if (head == food) {
+            snake.push_back(head);
+            do {
+                food = make_pair(rand() % BOARD_SIZE, rand() % BOARD_SIZE);
+            } while (find(snake.begin(), snake.end(), food) != snake.end() || food == poison);
+            do {
+                poison = make_pair(rand() % BOARD_SIZE, rand() % BOARD_SIZE);
+            } while (find(snake.begin(), snake.end(), poison) != snake.end() || poison == food);
+            score = static_cast<int>(snake.size()) - 1;
+        } else {
             snake.push_back(head);
             snake.pop_front();
         }
+        render_game(snake, food, poison, score);
 
-        render_game(GRID_SIZE, snake, food, poison);
-        last_direction.store(cur_dir);
-        Sleep(speed);
+        while (paused) {
+            sleep_for(50ms);
+            if (!running) break;
+        }
+        if (!running) break;
+
+        int sleep_ms = 500 - score * 20;
+        if (sleep_ms < 100) sleep_ms = 100;
+        sleep_for(chrono::milliseconds(sleep_ms));
+
+        head = get_next_head(snake.back(), direction);
     }
+
+    if (game_over) {
+        high_scores.push_back(score);
+        sort(high_scores.rbegin(), high_scores.rend());
+        if (high_scores.size() > 10) high_scores.resize(10);
+        save_high_scores();
+
+        cout << "\033[H"; // Reset cursor to top-left
+        cout << "Game Over!" << endl;
+        display_high_scores();
+    }
+
+    // Show cursor back before exit
+    cout << "\033[?25h";
+
+    running = false;
 }
