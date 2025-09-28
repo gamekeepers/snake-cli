@@ -43,7 +43,7 @@ void input_handler()
     tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
 }
 
-void render_game(int size, deque<pair<int, int>> &snake, pair<int, int> food)
+void render_game(int size, deque<pair<int, int>> &snake, pair<int, int> food, pair<int, int> poisonousFood)
 {
     for (size_t i = 0; i < size; i++)
     {
@@ -52,6 +52,10 @@ void render_game(int size, deque<pair<int, int>> &snake, pair<int, int> food)
             if (i == food.first && j == food.second)
             {
                 cout << "🍎";
+            }
+            else if (i == poisonousFood.first && j == poisonousFood.second)
+            {
+                cout << "💀";
             }
             else if (find(snake.begin(), snake.end(), make_pair(int(i), int(j))) != snake.end())
             {
@@ -112,6 +116,16 @@ void increase_score()
     score += 10;
 }
 
+pair<int, int> get_poisonous_food(deque<pair<int, int>> &snake)
+{
+    pair<int, int> food = make_pair(rand() % 10, rand() % 10);
+    while (find(snake.begin(), snake.end(), food) != snake.end())
+    {
+        food = make_pair(rand() % 10, rand() % 10);
+    }
+    return food;
+}
+
 
 void game_play()
 {
@@ -120,12 +134,13 @@ void game_play()
     snake.push_back(make_pair(0, 0));
 
     pair<int, int> food = get_food(snake);
+    pair<int, int> poisonousFood = get_poisonous_food(snake);
     for (pair<int, int> head = make_pair(0, 1);; head = get_next_head(head, direction))
     {
         // send the cursor to the top
         cout << "\033[H";
         // check self collision
-        if (find(snake.begin(), snake.end(), head) != snake.end())
+        if (find(snake.begin(), snake.end(), head) != snake.end() || (head.first == poisonousFood.first && head.second == poisonousFood.second))
         {
             system("clear");
             cout << "Game Over" << endl;
@@ -135,6 +150,7 @@ void game_play()
         {
             // grow snake
             food = get_food(snake);
+            poisonousFood = get_poisonous_food(snake);
             snake.push_back(head);
             reduce_sleep_time(snake);
             increase_score();
@@ -145,7 +161,7 @@ void game_play()
             snake.push_back(head);
             snake.pop_front();
         }
-        render_game(10, snake, food);
+        render_game(10, snake, food, poisonousFood);
         cout << "length of snake: " << snake.size() << "  -  score: " << score << endl;
 
         sleep_for(sleep_time);
