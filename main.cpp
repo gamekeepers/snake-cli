@@ -1,9 +1,10 @@
 #include "snake.h"
 
 int main(int argc, char *argv[]) {
-    thread input_thread(input_handler);
-    thread game_thread(game_play);   
+    GameState state;
+    thread input_thread(input_handler, std::ref(state));
+    thread game_thread(game_play, std::ref(state));
     input_thread.join();
     game_thread.join();
-return 0;
+    return 0;
 }

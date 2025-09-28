@@ -11,15 +11,22 @@
 using namespace std;
 using std::chrono::system_clock;
 using namespace std::this_thread;
-char direction = 'r';
 
-chrono::duration sleep_time = 500ms;
-int score = 10;
-bool is_paused = false;
-vector<int> top_scores;
-bool waiting_for_restart = false;
+struct GameState {
+    char direction = 'r';
+    chrono::milliseconds sleep_time = chrono::milliseconds(500);
+    int score = 10;
+    bool is_paused = false;
+    bool waiting_for_restart = false;
+    deque<pair<int, int>> snake;
+    pair<int, int> food;
+    pair<int, int> poisonousFood;
+};
 
-void game_play();
+GameState gameState;
+std::vector<int> top_scores;
+
+void game_play(GameState& state);
 
 bool is_opposite_direction(char current, char next) {
     return (current == 'r' && next == 'l') ||
@@ -28,38 +35,61 @@ bool is_opposite_direction(char current, char next) {
            (current == 'd' && next == 'u');
 }
 
-void input_handler()
-{
-    // change terminal settings
-    struct termios oldt, newt;
+void setup_terminal(struct termios& oldt, struct termios& newt) {
     tcgetattr(STDIN_FILENO, &oldt);
     newt = oldt;
     // turn off canonical mode and echo
     newt.c_lflag &= ~(ICANON | ECHO);
     tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+}
+
+void restore_terminal(struct termios& oldt) {
+    tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+}
+
+void handle_direction_input(char input, map<char, char>& keymap) {
+    char next_dir = keymap[input];
+    if (!is_opposite_direction(gameState.direction, next_dir)) {
+        gameState.direction = next_dir;
+    }
+}
+
+void input_handler(GameState& state)
+{
+    struct termios oldt, newt;
+    setup_terminal(oldt, newt);
     map<char, char> keymap = {{'d', 'r'}, {'a', 'l'}, {'w', 'u'}, {'s', 'd'}, {'q', 'q'}};
     while (true)
     {
-        if (waiting_for_restart) continue; // Ignore input during restart prompt
+        if (state.waiting_for_restart) continue;
         char input = getchar();
         if (input == 'p') {
-            is_paused = !is_paused; // Toggle pause state
+            state.is_paused = !state.is_paused;
         }
         else if (keymap.find(input) != keymap.end())
         {
-            // This now correctly modifies the single, shared 'direction' variable
             char next_dir = keymap[input];
-            if (!is_opposite_direction(direction, next_dir)) {
-                direction = next_dir;
+            if (!is_opposite_direction(state.direction, next_dir)) {
+                state.direction = next_dir;
             }
         }
         else if (input == 'q')
         {
             exit(0);
         }
-        // You could add an exit condition here, e.g., if (input == 'q') break;
     }
-    tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+    restore_terminal(oldt);
+}
+
+string render_cell(int i, int j, const deque<pair<int, int>>& snake, const pair<int, int>& food, const pair<int, int>& poisonousFood) {
+    if (i == food.first && j == food.second)
+        return "🍎";
+    else if (i == poisonousFood.first && j == poisonousFood.second)
+        return "💀";
+    else if (find(snake.begin(), snake.end(), make_pair(i, j)) != snake.end())
+        return "🐍";
+    else
+        return "⬜";
 }
 
 void render_game(int size, deque<pair<int, int>> &snake, pair<int, int> food, pair<int, int> poisonousFood)
@@ -68,22 +98,7 @@ void render_game(int size, deque<pair<int, int>> &snake, pair<int, int> food, pa
     {
         for (size_t j = 0; j < size; j++)
         {
-            if (i == food.first && j == food.second)
-            {
-                cout << "🍎";
-            }
-            else if (i == poisonousFood.first && j == poisonousFood.second)
-            {
-                cout << "💀";
-            }
-            else if (find(snake.begin(), snake.end(), make_pair(int(i), int(j))) != snake.end())
-            {
-                cout << "🐍";
-            }
-            else
-            {
-                cout << "⬜";
-            }
+            cout << render_cell(i, j, snake, food, poisonousFood);
         }
         cout << endl;
     }
@@ -114,35 +129,36 @@ pair<int, int> get_next_head(pair<int, int> current, char direction)
 
 void reduce_sleep_time(deque<pair<int, int>> &snake)
 {
-    if (snake.size() % 10 == 0 && sleep_time > 100ms)
+    if (snake.size() % 10 == 0 && gameState.sleep_time > 100ms)
     {
-        sleep_time -= 50ms;
+        gameState.sleep_time -= 50ms;
     }
+}
+
+pair<int, int> get_random_position(const deque<pair<int, int>>& snake, const pair<int, int>* avoid = nullptr) {
+    pair<int, int> pos;
+    do {
+        pos = make_pair(rand() % 10, rand() % 10);
+    } while (
+        find(snake.begin(), snake.end(), pos) != snake.end() ||
+        (avoid && pos == *avoid)
+    );
+    return pos;
 }
 
 pair<int, int> get_food(deque<pair<int, int>> &snake)
 {
-    pair<int, int> food = make_pair(rand() % 10, rand() % 10);
-    while (find(snake.begin(), snake.end(), food) != snake.end())
-    {
-        food = make_pair(rand() % 10, rand() % 10);
-    }
-    return food;
+    return get_random_position(snake);
 }
 
 void increase_score()
 {
-    score += 10;
+    gameState.score += 10;
 }
 
 pair<int, int> get_poisonous_food(deque<pair<int, int>> &snake, pair<int, int> food)
 {
-    pair<int, int> pfood = make_pair(rand() % 10, rand() % 10);
-    while (find(snake.begin(), snake.end(), pfood) != snake.end() || food == pfood)
-    {
-        pfood = make_pair(rand() % 10, rand() % 10);
-    }
-    return pfood;
+    return get_random_position(snake, &food);
 }
 
 void show_top_scores() {
@@ -163,10 +179,10 @@ void wait_for_restart() {
     while (true) {
         char input = getchar();
         if (input == 'n') {
-            score = 10;
-            direction = 'r';
-            waiting_for_restart = false;
-            game_play();
+            gameState.score = 10;
+            gameState.direction = 'r';
+            gameState.waiting_for_restart = false;
+            game_play(gameState);
             break;
         } else if (input == 'q') {
             exit(0);
@@ -175,54 +191,75 @@ void wait_for_restart() {
 }
 
 
-void game_play()
+void handle_pause() {
+    cout << "Game Paused. Press 'p' to resume." << endl;
+    sleep_for(300ms);
+}
+
+bool is_collision(const deque<pair<int, int>>& snake, const pair<int, int>& head, const pair<int, int>& poisonousFood) {
+    return find(snake.begin(), snake.end(), head) != snake.end() ||
+           (head.first == poisonousFood.first && head.second == poisonousFood.second);
+}
+
+void handle_game_over(GameState& state) {
+    gameState.waiting_for_restart = true;
+    system("clear");
+    cout << "Game Over" << endl;
+    update_top_scores(gameState.score);
+    show_top_scores();
+    wait_for_restart();
+}
+
+void handle_food_eaten(deque<pair<int, int>>& snake, pair<int, int>& food, pair<int, int>& poisonousFood, const pair<int, int>& head) {
+    food = get_food(snake);
+    poisonousFood = get_poisonous_food(snake, food);
+    snake.push_back(head);
+    reduce_sleep_time(snake);
+    increase_score();
+}
+
+void move_snake(deque<pair<int, int>>& snake, const pair<int, int>& head) {
+    snake.push_back(head);
+    snake.pop_front();
+}
+
+void display_status(const deque<pair<int, int>>& snake) {
+    cout << "length of snake: " << snake.size() << "  -  score: " << gameState.score << endl;
+}
+
+void game_play(GameState& state)
 {
     system("clear");
-    deque<pair<int, int>> snake;
-    snake.push_back(make_pair(0, 0));
+    state.snake.clear();
+    state.snake.push_back(make_pair(0, 0));
+    state.food = get_food(state.snake);
+    state.poisonousFood = get_poisonous_food(state.snake, state.food);
+    pair<int, int> head = make_pair(0, 1);
 
-    pair<int, int> food = get_food(snake);
-    pair<int, int> poisonousFood = get_poisonous_food(snake, food);
-    for (pair<int, int> head = make_pair(0, 1);;)
+    while (true)
     {
-        // send the cursor to the top
         cout << "\033[H";
-        if (is_paused) {
-            cout << "Game Paused. Press 'p' to resume." << endl;
-            sleep_for(300ms); // Slow refresh while paused
-            continue; // Skip game logic
+        if (state.is_paused) {
+            handle_pause();
+            continue;
         }
-        // check self collision
-        if (find(snake.begin(), snake.end(), head) != snake.end() || (head.first == poisonousFood.first && head.second == poisonousFood.second))
-        {
-            waiting_for_restart = true;
-            system("clear");
-            cout << "Game Over" << endl;
-            update_top_scores(score);
-            show_top_scores();
-            wait_for_restart();
-            return; // End current game_play loop
-            // exit(0);
+        if (is_collision(state.snake, head, state.poisonousFood)) {
+            handle_game_over(state);
+            return;
         }
-        else if (head.first == food.first && head.second == food.second)
+        else if (head.first == state.food.first && head.second == state.food.second)
         {
-            // grow snake
-            food = get_food(snake);
-            poisonousFood = get_poisonous_food(snake, food);
-            snake.push_back(head);
-            reduce_sleep_time(snake);
-            increase_score();
+            handle_food_eaten(state.snake, state.food, state.poisonousFood, head);
+            state.score += 10;
         }
         else
         {
-            // move snake
-            snake.push_back(head);
-            snake.pop_front();
+            move_snake(state.snake, head);
         }
-        render_game(10, snake, food, poisonousFood);
-        cout << "length of snake: " << snake.size() << "  -  score: " << score << endl;
+        render_game(10, state.snake, state.food, state.poisonousFood);
+        display_status(state.snake);
 
-        sleep_for(sleep_time);
-        head = get_next_head(head, direction);
+        sleep_for(state.sleep_time);
+        head = get_next_head(head, state.direction);
     }
 }
