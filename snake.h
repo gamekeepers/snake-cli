@@ -10,8 +10,10 @@
 
 using namespace std;
 using namespace std::this_thread;
+
 char direction = 'r';
-int score = 0; // ✅ Track score
+int score = 0;
+pair<int, int> poisonous_food; // ✅ poisonous food
 
 void input_handler() {
     struct termios oldt, newt;
@@ -43,6 +45,7 @@ void render_game(int size, deque<pair<int, int>> &snake, pair<int, int> food) {
     for (int i = 0; i < size; i++) {
         for (int j = 0; j < size; j++) {
             if (i == food.first && j == food.second) cout << "🍎";
+            else if (i == poisonous_food.first && j == poisonous_food.second) cout << "💀"; // ✅ poisonous food
             else if (find(snake.begin(), snake.end(), make_pair(i, j)) != snake.end()) cout << "🐍";
             else cout << "⬜";
         }
@@ -50,12 +53,12 @@ void render_game(int size, deque<pair<int, int>> &snake, pair<int, int> food) {
     }
 }
 
-// Generate food that does not overlap with snake
-pair<int, int> generate_food(deque<pair<int, int>> &snake) {
+// Generate food that does not overlap with snake or poisonous food
+pair<int, int> generate_food(deque<pair<int, int>> &snake, pair<int, int> avoid) {
     pair<int, int> food;
     do {
         food = {rand() % 10, rand() % 10};
-    } while (find(snake.begin(), snake.end(), food) != snake.end());
+    } while (find(snake.begin(), snake.end(), food) != snake.end() || food == avoid);
     return food;
 }
 
@@ -64,7 +67,8 @@ void game_play() {
     deque<pair<int, int>> snake;
     snake.push_back({0, 0});
 
-    pair<int, int> food = generate_food(snake);
+    pair<int, int> food = generate_food(snake, {-1, -1});
+    poisonous_food = generate_food(snake, food); // ✅ spawn poisonous food
 
     chrono::milliseconds sleep_duration(500); // Initial speed
 
@@ -74,18 +78,25 @@ void game_play() {
         // Collision with self
         if (find(snake.begin(), snake.end(), head) != snake.end()) {
             system("clear");
-            cout << "Game Over" << endl;
-            cout << "Final Score: " << score << endl; // ✅ Show final score
+            cout << "Game Over (Hit yourself)" << endl;
+            cout << "Final Score: " << score << endl;
             exit(0);
         }
 
-        // Eat food
+        // Poisonous food
+        if (head == poisonous_food) {
+            system("clear");
+            cout << "Game Over (Ate poisonous food)" << endl; // ✅ poison ends game
+            cout << "Final Score: " << score << endl;
+            exit(0);
+        }
+
+        // Eat normal food
         if (head == food) {
             snake.push_back(head);
-            score += 10; // ✅ Increase score
-            food = generate_food(snake);
+            score += 10;
+            food = generate_food(snake, poisonous_food);
 
-            // Increase difficulty
             if (sleep_duration.count() > 50) sleep_duration -= chrono::milliseconds(10);
         } else {
             snake.push_back(head);
@@ -93,7 +104,7 @@ void game_play() {
         }
 
         render_game(10, snake, food);
-        cout << "Score: " << score << endl; // ✅ Display score
+        cout << "Score: " << score << endl;
         sleep_for(sleep_duration);
     }
 }
