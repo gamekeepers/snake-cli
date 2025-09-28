@@ -14,6 +14,7 @@ using namespace std::this_thread;
 char direction = 'r';
 
 chrono::duration sleep_time = 500ms;
+int score = 10;
 
 void input_handler()
 {
@@ -106,6 +107,11 @@ pair<int, int> get_food(deque<pair<int, int>> &snake)
     return food;
 }
 
+void increase_score()
+{
+    score += 10;
+}
+
 
 void game_play()
 {
@@ -131,6 +137,7 @@ void game_play()
             food = get_food(snake);
             snake.push_back(head);
             reduce_sleep_time(snake);
+            increase_score();
         }
         else
         {
@@ -139,7 +146,7 @@ void game_play()
             snake.pop_front();
         }
         render_game(10, snake, food);
-        cout << "length of snake: " << snake.size() << endl;
+        cout << "length of snake: " << snake.size() << "  -  score: " << score << endl;
 
         sleep_for(sleep_time);
     }
