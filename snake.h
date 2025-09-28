@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <deque>
 #include <algorithm>
+#include <fstream> // ✅ file handling
 
 using namespace std;
 using namespace std::this_thread;
@@ -14,7 +15,27 @@ using namespace std::this_thread;
 char direction = 'r';
 int score = 0;
 pair<int, int> poisonous_food;
-bool is_paused = false; // ✅ pause state
+bool is_paused = false;
+
+void update_high_scores() {
+    vector<int> high_scores;
+    ifstream infile("high_scores.txt");
+    int s;
+    while (infile >> s) high_scores.push_back(s);
+    infile.close();
+
+    high_scores.push_back(score);
+    sort(high_scores.rbegin(), high_scores.rend());
+
+    ofstream outfile("high_scores.txt");
+    for (size_t i = 0; i < high_scores.size() && i < 10; ++i) {
+        outfile << high_scores[i] << endl;
+    }
+    outfile.close();
+
+    cout << "\n--- Top 10 High Scores ---" << endl;
+    for (int hs : high_scores) cout << hs << endl;
+}
 
 void input_handler() {
     struct termios oldt, newt;
@@ -29,7 +50,7 @@ void input_handler() {
         else if (input == 'a') direction = 'l';
         else if (input == 'w') direction = 'u';
         else if (input == 's') direction = 'd';
-        else if (input == 'p') is_paused = !is_paused; // ✅ toggle pause
+        else if (input == 'p') is_paused = !is_paused;
         else if (input == 'q') exit(0);
     }
     tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
@@ -76,7 +97,7 @@ void game_play() {
     for (pair<int, int> head = {0, 1};; head = get_next_head(head, direction)) {
         cout << "\033[H";
 
-        if (is_paused) { // ✅ pause screen
+        if (is_paused) {
             cout << "Game Paused. Press 'p' to resume." << endl;
             sleep_for(200ms);
             continue;
@@ -86,6 +107,7 @@ void game_play() {
             system("clear");
             cout << "Game Over (Hit yourself)" << endl;
             cout << "Final Score: " << score << endl;
+            update_high_scores(); // ✅ store high score
             exit(0);
         }
 
@@ -93,6 +115,7 @@ void game_play() {
             system("clear");
             cout << "Game Over (Ate poisonous food)" << endl;
             cout << "Final Score: " << score << endl;
+            update_high_scores(); // ✅ store high score
             exit(0);
         }
 
