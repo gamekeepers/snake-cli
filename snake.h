@@ -21,6 +21,13 @@ bool waiting_for_restart = false;
 
 void game_play();
 
+bool is_opposite_direction(char current, char next) {
+    return (current == 'r' && next == 'l') ||
+           (current == 'l' && next == 'r') ||
+           (current == 'u' && next == 'd') ||
+           (current == 'd' && next == 'u');
+}
+
 void input_handler()
 {
     // change terminal settings
@@ -41,7 +48,10 @@ void input_handler()
         else if (keymap.find(input) != keymap.end())
         {
             // This now correctly modifies the single, shared 'direction' variable
-            direction = keymap[input];
+            char next_dir = keymap[input];
+            if (!is_opposite_direction(direction, next_dir)) {
+                direction = next_dir;
+            }
         }
         else if (input == 'q')
         {
