@@ -30,9 +30,10 @@ private:
     int food_count;
     int speed;
     int score;
+    bool paused;  // Add paused flag
 
 public:
-    SnakeGame() : direction('r'), food_count(0), speed(INITIAL_SPEED), score(0) {
+    SnakeGame() : direction('r'), food_count(0), speed(INITIAL_SPEED), score(0), paused(false) {
         initialize_game();
     }
     
@@ -72,7 +73,10 @@ public:
             map<char, char> keymap = {{'d', 'r'}, {'a', 'l'}, {'w', 'u'}, {'s', 'd'}, {'q', 'q'}};
             while (true) {
                 char input = getchar();
-                if (keymap.find(input) != keymap.end()) {
+                if (input == 'p') {
+                    paused = !paused;  // toggle pause on/off
+                }
+                else if (keymap.find(input) != keymap.end()) {
                     direction = keymap[input];
                 } else if (input == 'q'){
                     tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
@@ -325,6 +329,11 @@ public:
         }
     }
     
+    void display_pause_message() {
+        cout << "\n==== PAUSED ====" << endl;
+        cout << "Press 'p' to resume..." << endl;
+    }
+    
     void play() {
         try {
             system("clear");
@@ -332,6 +341,15 @@ public:
             
             while (true) {
                 cout << "\033[H";
+                
+                // Handle pause state
+                while (paused) {
+                    cout << "\033[H"; // reset cursor
+                    render_board();
+                    display_pause_message();
+                    sleep_for(chrono::milliseconds(200));
+                }
+                
                 head = get_next_head(head, direction);
                 
                 handle_collisions(head);
