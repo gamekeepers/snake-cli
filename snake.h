@@ -11,7 +11,7 @@
 using namespace std;
 using namespace std::this_thread;
 char direction = 'r';
-int score = 0;
+int score = 0; // ✅ Track score
 
 void input_handler() {
     struct termios oldt, newt;
@@ -75,14 +75,15 @@ void game_play() {
         if (find(snake.begin(), snake.end(), head) != snake.end()) {
             system("clear");
             cout << "Game Over" << endl;
+            cout << "Final Score: " << score << endl; // ✅ Show final score
             exit(0);
         }
 
         // Eat food
         if (head == food) {
             snake.push_back(head);
-            score += 10;
-            food = generate_food(snake); // ensure food not inside snake
+            score += 10; // ✅ Increase score
+            food = generate_food(snake);
 
             // Increase difficulty
             if (sleep_duration.count() > 50) sleep_duration -= chrono::milliseconds(10);
@@ -92,7 +93,7 @@ void game_play() {
         }
 
         render_game(10, snake, food);
-        cout << "Score: " << score << endl;
+        cout << "Score: " << score << endl; // ✅ Display score
         sleep_for(sleep_duration);
     }
 }
