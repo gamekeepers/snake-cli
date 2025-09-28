@@ -16,6 +16,10 @@ char direction = 'r';
 chrono::duration sleep_time = 500ms;
 int score = 10;
 bool is_paused = false;
+vector<int> top_scores;
+bool waiting_for_restart = false;
+
+void game_play();
 
 void input_handler()
 {
@@ -29,6 +33,7 @@ void input_handler()
     map<char, char> keymap = {{'d', 'r'}, {'a', 'l'}, {'w', 'u'}, {'s', 'd'}, {'q', 'q'}};
     while (true)
     {
+        if (waiting_for_restart) continue; // Ignore input during restart prompt
         char input = getchar();
         if (input == 'p') {
             is_paused = !is_paused; // Toggle pause state
@@ -120,14 +125,43 @@ void increase_score()
     score += 10;
 }
 
-pair<int, int> get_poisonous_food(deque<pair<int, int>> &snake)
+pair<int, int> get_poisonous_food(deque<pair<int, int>> &snake, pair<int, int> food)
 {
-    pair<int, int> food = make_pair(rand() % 10, rand() % 10);
-    while (find(snake.begin(), snake.end(), food) != snake.end())
+    pair<int, int> pfood = make_pair(rand() % 10, rand() % 10);
+    while (find(snake.begin(), snake.end(), pfood) != snake.end() || food == pfood)
     {
-        food = make_pair(rand() % 10, rand() % 10);
+        pfood = make_pair(rand() % 10, rand() % 10);
     }
-    return food;
+    return pfood;
+}
+
+void show_top_scores() {
+    cout << "\n--- Top 10 Scores ---\n";
+    for (size_t i = 0; i < top_scores.size(); ++i) {
+        cout << i + 1 << ". " << top_scores[i] << endl;
+    }
+}
+
+void update_top_scores(int new_score) {
+    top_scores.push_back(new_score);
+    sort(top_scores.rbegin(), top_scores.rend());
+    if (top_scores.size() > 10) top_scores.resize(10);
+}
+
+void wait_for_restart() {
+    cout << "Press 'n' to start again or 'q' to quit." << endl;
+    while (true) {
+        char input = getchar();
+        if (input == 'n') {
+            score = 10;
+            direction = 'r';
+            waiting_for_restart = false;
+            game_play();
+            break;
+        } else if (input == 'q') {
+            exit(0);
+        }
+    }
 }
 
 
@@ -138,7 +172,7 @@ void game_play()
     snake.push_back(make_pair(0, 0));
 
     pair<int, int> food = get_food(snake);
-    pair<int, int> poisonousFood = get_poisonous_food(snake);
+    pair<int, int> poisonousFood = get_poisonous_food(snake, food);
     for (pair<int, int> head = make_pair(0, 1);;)
     {
         // send the cursor to the top
@@ -151,15 +185,20 @@ void game_play()
         // check self collision
         if (find(snake.begin(), snake.end(), head) != snake.end() || (head.first == poisonousFood.first && head.second == poisonousFood.second))
         {
+            waiting_for_restart = true;
             system("clear");
             cout << "Game Over" << endl;
-            exit(0);
+            update_top_scores(score);
+            show_top_scores();
+            wait_for_restart();
+            return; // End current game_play loop
+            // exit(0);
         }
         else if (head.first == food.first && head.second == food.second)
         {
             // grow snake
             food = get_food(snake);
-            poisonousFood = get_poisonous_food(snake);
+            poisonousFood = get_poisonous_food(snake, food);
             snake.push_back(head);
             reduce_sleep_time(snake);
             increase_score();
