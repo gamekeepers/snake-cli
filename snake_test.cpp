@@ -1,49 +1,78 @@
 #include <gtest/gtest.h>
 #include "snake.h"
 
-
-TEST(SnakeBehaviour, NextHeadRight) {
-    pair<int, int> current = make_pair(rand() % 10, rand() % 10);
-    EXPECT_EQ(get_next_head(current, 'r'),make_pair(current.first,current.second+1));
-    
+TEST(SnakeTest, InitialPosition) {
+    Snake snake(10);
+    ASSERT_EQ(snake.get_body().size(), 1);
+    EXPECT_EQ(snake.get_head().x, 0);
+    EXPECT_EQ(snake.get_head().y, 0);
 }
 
-
-TEST(SnakeBehaviour, NextHeadLeft) {
-  pair<int, int> current = make_pair(rand() % 10, rand() % 10);
-  EXPECT_EQ(get_next_head(current, 'l'),make_pair(current.first,current.second-1));
-  
+TEST(SnakeTest, MoveRight) {
+    Snake snake(10);
+    snake.set_direction('r');
+    snake.move();
+    EXPECT_EQ(snake.get_head().x, 0);
+    EXPECT_EQ(snake.get_head().y, 1);
 }
 
-TEST(SnakeBehaviour, NextHeadUp) {
-  pair<int, int> current = make_pair(rand() % 10, rand() % 10);
-  EXPECT_EQ(get_next_head(current, 'u'),make_pair(current.first-1,current.second));
+TEST(SnakeTest, MoveLeftWrapAround) {
+    Snake snake(10);
+    snake.set_direction('l');
+    snake.move();
+    EXPECT_EQ(snake.get_head().x, 0);
+    EXPECT_EQ(snake.get_head().y, 9);
 }
 
-TEST(SnakeBehaviour, NextHeadDown) {
-  pair<int, int> current = make_pair(rand() % 10, rand() % 10);
-  EXPECT_EQ(get_next_head(current, 'd'),make_pair(current.first+1,current.second));
-  
+TEST(SnakeTest, MoveDown) {
+    Snake snake(10);
+    snake.set_direction('d');
+    snake.move();
+    EXPECT_EQ(snake.get_head().x, 1);
+    EXPECT_EQ(snake.get_head().y, 0);
 }
 
+TEST(SnakeTest, MoveUpWrapAround) {
+    Snake snake(10);
+    snake.set_direction('u');
+    snake.move();
+    EXPECT_EQ(snake.get_head().x, 9);
+    EXPECT_EQ(snake.get_head().y, 0);
+}
 
-/** 
- * g++ -o my_tests snake_test.cpp -lgtest -lgtest_main -pthread;
- * This command is a two-part shell command. Let's break it down.
+TEST(SnakeTest, Grow) {
+    Snake snake(10);
+    snake.grow();
+    ASSERT_EQ(snake.get_body().size(), 2);
+    EXPECT_EQ(snake.get_head().x, 0);
+    EXPECT_EQ(snake.get_head().y, 1);
+}
 
-  The first part is the compilation:
-  g++ -o my_tests hello_gtest.cpp -lgtest -lgtest_main -pthread
+TEST(SnakeTest, Collision) {
+    Snake snake(10);
+    snake.grow(); // {0,1}, {0,0}
+    snake.grow(); // {0,2}, {0,1}, {0,0}
+    snake.grow(); // {0,3}, {0,2}, {0,1}, {0,0}
+    snake.set_direction('d');
+    snake.grow(); // {1,3}, {0,3}, {0,2}, {0,1}, {0,0}
+    snake.set_direction('l');
+    snake.grow(); // {1,2}, {1,3}, {0,3}, {0,2}, {0,1}, {0,0}
+    snake.set_direction('u');
+    snake.grow(); // {0,2}, {1,2}, {1,3}, {0,3}, {0,2}, {0,1}, {0,0}
+    EXPECT_TRUE(snake.check_collision());
+}
 
+TEST(FoodTest, InitialPosition) {
+    Snake snake(10);
+    Food food(10, snake.get_body());
+    Point pos = food.get_position();
+    EXPECT_GE(pos.x, 0);
+    EXPECT_LT(pos.x, 10);
+    EXPECT_GE(pos.y, 0);
+    EXPECT_LT(pos.y, 10);
+}
 
-   * g++: This invokes the GNU C++ compiler.
-   * -o my_tests: This tells the compiler to create an executable file named
-     my_tests.
-   * hello_gtest.cpp: This is the C++ source file containing your tests.
-   * -lgtest: This links the Google Test library, which provides the core testing
-     framework.
-   * -lgtest_main: This links a pre-compiled main function provided by Google
-     Test, which saves you from writing your own main() to run the tests.
-   * -pthread: This links the POSIX threads library, which is required by Google
-     Test for its operation.
- * 
-*/
+int main(int argc, char **argv) {
+    ::testing::InitGoogleTest(&argc, argv);
+    return RUN_ALL_TESTS();
+}
