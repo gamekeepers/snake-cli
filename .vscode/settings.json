@@ -1,6 +1,8 @@
 {
     "files.associations": {
         "*.ejs": "html",
-        "chrono": "cpp"
+        "chrono": "cpp",
+        "thread": "cpp",
+        "ostream": "cpp"
     }
 }

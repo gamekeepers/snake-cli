@@ -15,6 +15,7 @@ char direction = 'r';
 
 chrono::duration sleep_time = 500ms;
 int score = 10;
+bool is_paused = false;
 
 void input_handler()
 {
@@ -29,7 +30,10 @@ void input_handler()
     while (true)
     {
         char input = getchar();
-        if (keymap.find(input) != keymap.end())
+        if (input == 'p') {
+            is_paused = !is_paused; // Toggle pause state
+        }
+        else if (keymap.find(input) != keymap.end())
         {
             // This now correctly modifies the single, shared 'direction' variable
             direction = keymap[input];
@@ -135,10 +139,15 @@ void game_play()
 
     pair<int, int> food = get_food(snake);
     pair<int, int> poisonousFood = get_poisonous_food(snake);
-    for (pair<int, int> head = make_pair(0, 1);; head = get_next_head(head, direction))
+    for (pair<int, int> head = make_pair(0, 1);;)
     {
         // send the cursor to the top
         cout << "\033[H";
+        if (is_paused) {
+            cout << "Game Paused. Press 'p' to resume." << endl;
+            sleep_for(300ms); // Slow refresh while paused
+            continue; // Skip game logic
+        }
         // check self collision
         if (find(snake.begin(), snake.end(), head) != snake.end() || (head.first == poisonousFood.first && head.second == poisonousFood.second))
         {
@@ -165,5 +174,6 @@ void game_play()
         cout << "length of snake: " << snake.size() << "  -  score: " << score << endl;
 
         sleep_for(sleep_time);
+        head = get_next_head(head, direction);
     }
 }
