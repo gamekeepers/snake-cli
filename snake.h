@@ -115,6 +115,7 @@ void game_play(){
         }else if (head.first == food.first && head.second == food.second) {
             // grow snake
             food = generate_food(snake, 10);
+            food = generate_food(snake, 10);
             snake.push_back(head);            
         }else{
             // move snake
