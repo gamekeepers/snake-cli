@@ -12,6 +12,7 @@ using namespace std;
 using std::chrono::system_clock;
 using namespace std::this_thread;
 char direction='r';
+vector<int> highScores;
 
 
 void input_handler(){
@@ -47,9 +48,9 @@ void render_game(int size, deque<pair<int, int>> &snake, pair<int, int> food){
             }else{
                 cout << "⬜";
             }
+        }
+        cout << endl;
     }
-    cout << endl;
-}
 }
 
 pair<int,int> get_next_head(pair<int,int> current, char direction){
@@ -68,14 +69,35 @@ pair<int,int> get_next_head(pair<int,int> current, char direction){
     
 }
 
+pair<int, int> generate_food(const deque<pair<int, int>> &snake, int size) {
+    pair<int, int> food;
+    do {
+        food = make_pair(rand() % size, rand() % size);
+    } while (find(snake.begin(), snake.end(), food) != snake.end());
+    return food;
+}
 
+void update_high_scores(int score) {
+    highScores.push_back(score);
+    sort(highScores.rbegin(), highScores.rend()); 
+    if (highScores.size() > 10) {
+        highScores.pop_back(); 
+    }
+}
+
+void show_high_scores() {
+    cout << "\nTOP 10 HIGH SCORES : \n";
+    for (size_t i = 0; i < highScores.size(); i++) {
+        cout << i + 1 << ". " << highScores[i] << endl;
+    }
+}
 
 void game_play(){
     system("clear");
     deque<pair<int, int>> snake;
     snake.push_back(make_pair(0,0));
 
-    pair<int, int> food = make_pair(rand() % 10, rand() % 10);
+    pair<int, int> food = generate_food(snake, 10);
     for(pair<int, int> head=make_pair(0,1);; head = get_next_head(head, direction)){
         // send the cursor to the top
         cout << "\033[H";
@@ -83,10 +105,16 @@ void game_play(){
         if (find(snake.begin(), snake.end(), head) != snake.end()) {
             system("clear");
             cout << "Game Over" << endl;
-            exit(0);
+
+            int finalScore = snake.size();
+            cout << "Your score: " << finalScore << endl;
+
+            update_high_scores(finalScore);
+            show_high_scores();
+            break;
         }else if (head.first == food.first && head.second == food.second) {
             // grow snake
-            food = make_pair(rand() % 10, rand() % 10);
+            food = generate_food(snake, 10);
             snake.push_back(head);            
         }else{
             // move snake
