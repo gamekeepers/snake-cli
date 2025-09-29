@@ -39,6 +39,7 @@ TEST(SnakeBehaviour, FoodNotOnSnake) {
     }
 }
 
+
 /** 
  * g++ -o my_tests snake_test.cpp -lgtest -lgtest_main -pthread;
  * This command is a two-part shell command. Let's break it down.
