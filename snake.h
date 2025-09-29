@@ -68,6 +68,13 @@ pair<int,int> get_next_head(pair<int,int> current, char direction){
     
 }
 
+pair<int, int> generate_food(const deque<pair<int, int>> &snake, int size) {
+    pair<int, int> food;
+    do {
+        food = make_pair(rand() % size, rand() % size);
+    } while (find(snake.begin(), snake.end(), food) != snake.end());
+    return food;
+}
 
 
 void game_play(){
@@ -75,7 +82,7 @@ void game_play(){
     deque<pair<int, int>> snake;
     snake.push_back(make_pair(0,0));
 
-    pair<int, int> food = make_pair(rand() % 10, rand() % 10);
+    pair<int, int> food = generate_food(snake, 10);
     for(pair<int, int> head=make_pair(0,1);; head = get_next_head(head, direction)){
         // send the cursor to the top
         cout << "\033[H";
@@ -86,7 +93,7 @@ void game_play(){
             exit(0);
         }else if (head.first == food.first && head.second == food.second) {
             // grow snake
-            food = make_pair(rand() % 10, rand() % 10);
+            food = generate_food(snake, 10);
             snake.push_back(head);            
         }else{
             // move snake
