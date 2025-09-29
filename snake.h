@@ -13,6 +13,7 @@ using std::chrono::system_clock;
 using namespace std::this_thread;
 char direction='r';
 vector<int> highScores;
+bool paused = false;
 
 
 void input_handler(){
@@ -31,6 +32,8 @@ void input_handler(){
             direction = keymap[input];
         }else if (input == 'q'){
             exit(0);
+        }else if (input == 'p') {
+            paused = !paused;
         }
         // You could add an exit condition here, e.g., if (input == 'q') break;
     }
@@ -51,6 +54,8 @@ void render_game(int size, deque<pair<int, int>> &snake, pair<int, int> food){
         }
         cout << endl;
     }
+
+    cout << " Score: " << snake.size() << (paused ? " | PAUSED (press 'p' to resume)" : "") << endl;
 }
 
 pair<int,int> get_next_head(pair<int,int> current, char direction){
@@ -98,10 +103,20 @@ void game_play(){
     snake.push_back(make_pair(0,0));
 
     pair<int, int> food = generate_food(snake, 10);
-    for(pair<int, int> head=make_pair(0,1);; head = get_next_head(head, direction)){
+    for(pair<int, int> head=make_pair(0,1); ; ){
         // send the cursor to the top
         cout << "\033[H";
         // check self collision
+
+        if(paused) {
+            render_game(10, snake, food);
+            sleep_for(200ms);
+            head = snake.back();
+            continue;
+        }
+
+        head = get_next_head(head, direction);
+
         if (find(snake.begin(), snake.end(), head) != snake.end()) {
             system("clear");
             cout << "Game Over" << endl;
@@ -114,7 +129,6 @@ void game_play(){
             break;
         }else if (head.first == food.first && head.second == food.second) {
             // grow snake
-            food = generate_food(snake, 10);
             food = generate_food(snake, 10);
             snake.push_back(head);            
         }else{
