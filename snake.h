@@ -8,17 +8,59 @@
 #include <map>
 #include <deque>
 #include <algorithm>
+#include <memory>
+
 using namespace std;
 using std::chrono::system_clock;
 using namespace std::this_thread;
 
 typedef pair<int, int> Cell;
 
+class InputManager {
+public:
+    virtual ~InputManager() {}
+    virtual char getInput() = 0;
+};
+
+class KeyboardInputManager : public InputManager {
+public:
+    KeyboardInputManager() {
+        struct termios oldt, newt;
+        tcgetattr(STDIN_FILENO, &oldt);
+        newt = oldt;
+        newt.c_lflag &= ~(ICANON | ECHO);
+        tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+    }
+
+    ~KeyboardInputManager() {
+        struct termios oldt;
+        tcgetattr(STDIN_FILENO, &oldt);
+        oldt.c_lflag |= (ICANON | ECHO);
+        tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+    }
+
+    char getInput() override {
+        return getchar();
+    }
+};
+
+class MockInputManager : public InputManager {
+private:
+    char next_input;
+public:
+    char getInput() override {
+        return next_input;
+    }
+    void setNextInput(char input) {
+        next_input = input;
+    }
+};
+
 class Snake{
     private:
         deque<Cell> body;
         int size=0;
-        char direction = 'r';
+        char direction = 'x';
     public:
     // default constructor
     Snake(){
@@ -72,6 +114,10 @@ class Snake{
         this->direction = direction;
     }
 
+    char get_direction(){
+        return this->direction;
+    }
+
     Cell get_head(){
         return this->body.back();
     }
@@ -100,11 +146,12 @@ class Game{
     int size=10;
     // speed
     std::chrono::milliseconds speed_timer = 500ms;
+    shared_ptr<InputManager> input_manager;
 
     public:
     Snake snake;
     Cell food;
-    Game(){
+    Game(shared_ptr<InputManager> input_manager) : input_manager(input_manager) {
         this->snake = Snake();
     }
 
@@ -147,62 +194,15 @@ class Game{
     sleep_for(this->getSpeed());
     }
     
+    shared_ptr<InputManager> getInputManager(){
+        return this->input_manager;
+    }
 };
 
 
-void input_handler(Game& game){
-    // change terminal settings
-    struct termios oldt, newt;
-    tcgetattr(STDIN_FILENO, &oldt);
-    newt = oldt;
-    // turn off canonical mode and echo
-    newt.c_lflag &= ~(ICANON | ECHO);
-    tcsetattr(STDIN_FILENO, TCSANOW, &newt);
-    map<char, char> keymap = {{'d', 'r'}, {'a', 'l'}, {'w', 'u'}, {'s', 'd'}, {'q', 'q'}};
-    while (true) {
-        char input = getchar();
-        if (keymap.find(input) != keymap.end()) {
-            game.set_direction(keymap[input]);
-        }else if (input == 'q'){
-            exit(0);
-        }
-        // You could add an exit condition here, e.g., if (input == 'q') break;
-    }
-    tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
-}
+void handle_single_input(Game& game);
+void input_handler(Game& game);
+void reset_cursor();
+void move_snake(deque<Cell> &snake, Cell new_head);
+void game_play(Game& game);
 
-void reset_cursor(){
-    cout << "\033[H";
-}
-
-void move_snake(deque<Cell> &snake, Cell new_head){
-    snake.push_back(new_head);
-    snake.pop_front();
-}
-
-
-
-
-void game_play(Game& game){
-    system("clear");
-
-    Cell food = game.generate_random_cell();
-    while(true){
-        reset_cursor();
-        // check self collision
-        if (game.checkCollission(game.snake.get_next_position())) {
-            system("clear");
-            cout << "Game Over" << endl;
-            exit(0);
-        }else if (game.snake.contains(food)) {
-            food = game.generate_random_cell();
-            game.snake.grow();
-            
-        }else{
-            game.snake.move();
-        }
-
-        game.render(food);
-        
-    }
-}
