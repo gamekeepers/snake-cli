@@ -97,56 +97,70 @@ class Snake{
 
 class Game{
     private:
-    int size=10;
-    // speed
-    std::chrono::milliseconds speed_timer = 500ms;
-
-    public:
-    Snake snake;
-    Cell food;
-    Game(){
-        this->snake = Snake();
-    }
-
-    std::chrono::milliseconds getSpeed(){
-        return this->speed_timer;
-    }
-    int getSize(){
-        return this->size;
-    }
-
-    Cell generate_random_cell(){
-        Cell new_pos = make_pair(rand() % this->getSize(), rand() % this->getSize());
-        while(this->snake.contains(new_pos)){
-            new_pos = make_pair(rand() % this->getSize(), rand() % this->getSize());
-        }
-        return new_pos;
-    }
-
-    bool checkCollission(Cell position){
-        return this->snake.contains(position);
-    }
-
-    void set_direction(char direction){
-        this->snake.set_direction(direction);
-    }
-
-    void render(Cell food){
-        for(size_t i=0;i<this->getSize();i++){
-            for(size_t j=0;j<this->getSize();j++){
-                if (snake.contains(make_pair(int(i), int(j)))) {
-                    cout << "🐍";
-                }else if (i == food.first && j == food.second){
-                    cout << "🍎";
-                }else{
-                    cout << "⬜";
-                }
-        }
-        cout << endl;
-    }
-    sleep_for(this->getSpeed());
-    }
+        int size=10;
+        // speed
+        std::chrono::milliseconds speed_timer = 500ms;
+        Snake snake;
+        Cell food;
     
+    public:
+        Game(){
+            this->snake = Snake();
+        }
+
+        std::chrono::milliseconds getSpeed(){
+            return this->speed_timer;
+        }
+        int getSize(){
+            return this->size;
+        }
+
+        Cell generate_random_cell(){
+            Cell new_pos = make_pair(rand() % this->getSize(), rand() % this->getSize());
+            while(this->snake.contains(new_pos)){
+                new_pos = make_pair(rand() % this->getSize(), rand() % this->getSize());
+            }
+            return new_pos;
+        }
+
+        bool checkCollission(Cell position){
+            return this->snake.contains(position);
+        }
+
+        void set_direction(char direction){
+            this->snake.set_direction(direction);
+        }
+
+        void render(){
+            for(size_t i=0;i<this->getSize();i++){
+                for(size_t j=0;j<this->getSize();j++){
+                    if (snake.contains(make_pair(int(i), int(j)))) {
+                        cout << "🐍";
+                    }else if (i == this->food.first && j == this->food.second){
+                        cout << "🍎";
+                    }else{
+                        cout << "⬜";
+                    }
+            }
+            cout << endl;
+        }
+        sleep_for(this->getSpeed());
+        }
+        
+        void update(){
+            // check self collision
+            if (this->checkCollission(this->snake.get_next_position())) {
+                system("clear");
+                cout << "Game Over" << endl;
+                exit(0);
+            }else if (this->snake.contains(food)) {
+                this->food = this->generate_random_cell();
+                this->snake.grow();
+                
+            }else{
+                this->snake.move();
+            }
+        }
 };
 
 
@@ -175,11 +189,6 @@ void reset_cursor(){
     cout << "\033[H";
 }
 
-void move_snake(deque<Cell> &snake, Cell new_head){
-    snake.push_back(new_head);
-    snake.pop_front();
-}
-
 
 
 
@@ -189,20 +198,8 @@ void game_play(Game& game){
     Cell food = game.generate_random_cell();
     while(true){
         reset_cursor();
-        // check self collision
-        if (game.checkCollission(game.snake.get_next_position())) {
-            system("clear");
-            cout << "Game Over" << endl;
-            exit(0);
-        }else if (game.snake.contains(food)) {
-            food = game.generate_random_cell();
-            game.snake.grow();
-            
-        }else{
-            game.snake.move();
-        }
-
-        game.render(food);
+        game.update();
+        game.render();
         
     }
 }
