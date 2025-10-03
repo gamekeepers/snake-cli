@@ -1,49 +1,24 @@
 #include <gtest/gtest.h>
 #include "snake.h"
 
-
-TEST(SnakeBehaviour, NextHeadRight) {
-    pair<int, int> current = make_pair(rand() % 10, rand() % 10);
-    EXPECT_EQ(get_next_head(current, 'r'),make_pair(current.first,current.second+1));
-    
+TEST(SnakeTest, MovementCollision) {
+    Snake s;
+    auto h = s.head();
+    EXPECT_FALSE(s.collides({h.first+1,h.second}));
+    s.grow({1,0});
+    EXPECT_TRUE(s.collides({1,0}));
 }
 
-
-TEST(SnakeBehaviour, NextHeadLeft) {
-  pair<int, int> current = make_pair(rand() % 10, rand() % 10);
-  EXPECT_EQ(get_next_head(current, 'l'),make_pair(current.first,current.second-1));
-  
+TEST(GameTest, NextHeadWrapAround) {
+    Game g;
+    EXPECT_EQ(g.getNextHead({5,14},'r'), std::make_pair(5,0));
+    EXPECT_EQ(g.getNextHead({0,5},'u'), std::make_pair(14,5));
 }
 
-TEST(SnakeBehaviour, NextHeadUp) {
-  pair<int, int> current = make_pair(rand() % 10, rand() % 10);
-  EXPECT_EQ(get_next_head(current, 'u'),make_pair(current.first-1,current.second));
+TEST(ScoreManagerTest, Top10Scores) {
+    ScoreManager sm;
+    for(int i=1;i<=15;i++) sm.add(i*10);
+    sm.load();
+    EXPECT_LE(sm.getScores().size(), 10);
+    EXPECT_GE(sm.getScores()[0], sm.getScores()[9]);
 }
-
-TEST(SnakeBehaviour, NextHeadDown) {
-  pair<int, int> current = make_pair(rand() % 10, rand() % 10);
-  EXPECT_EQ(get_next_head(current, 'd'),make_pair(current.first+1,current.second));
-  
-}
-
-
-/** 
- * g++ -o my_tests snake_test.cpp -lgtest -lgtest_main -pthread;
- * This command is a two-part shell command. Let's break it down.
-
-  The first part is the compilation:
-  g++ -o my_tests hello_gtest.cpp -lgtest -lgtest_main -pthread
-
-
-   * g++: This invokes the GNU C++ compiler.
-   * -o my_tests: This tells the compiler to create an executable file named
-     my_tests.
-   * hello_gtest.cpp: This is the C++ source file containing your tests.
-   * -lgtest: This links the Google Test library, which provides the core testing
-     framework.
-   * -lgtest_main: This links a pre-compiled main function provided by Google
-     Test, which saves you from writing your own main() to run the tests.
-   * -pthread: This links the POSIX threads library, which is required by Google
-     Test for its operation.
- * 
-*/
