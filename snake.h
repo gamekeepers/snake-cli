@@ -8,17 +8,59 @@
 #include <map>
 #include <deque>
 #include <algorithm>
+#include <memory>
+
 using namespace std;
 using std::chrono::system_clock;
 using namespace std::this_thread;
 
 typedef pair<int, int> Cell;
 
+class InputManager {
+public:
+    virtual ~InputManager() {}
+    virtual char getInput() = 0;
+};
+
+class KeyboardInputManager : public InputManager {
+public:
+    KeyboardInputManager() {
+        struct termios oldt, newt;
+        tcgetattr(STDIN_FILENO, &oldt);
+        newt = oldt;
+        newt.c_lflag &= ~(ICANON | ECHO);
+        tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+    }
+
+    ~KeyboardInputManager() {
+        struct termios oldt;
+        tcgetattr(STDIN_FILENO, &oldt);
+        oldt.c_lflag |= (ICANON | ECHO);
+        tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+    }
+
+    char getInput() override {
+        return getchar();
+    }
+};
+
+class MockInputManager : public InputManager {
+private:
+    char next_input;
+public:
+    char getInput() override {
+        return next_input;
+    }
+    void setNextInput(char input) {
+        next_input = input;
+    }
+};
+
 class Snake{
     private:
         deque<Cell> body;
         int size=0;
-        char direction = 'r';
+        char direction = 'x';
     public:
     // default constructor
     Snake(){
@@ -72,6 +114,10 @@ class Snake{
         this->direction = direction;
     }
 
+    char get_direction(){
+        return this->direction;
+    }
+
     Cell get_head(){
         return this->body.back();
     }
@@ -97,109 +143,68 @@ class Snake{
 
 class Game{
     private:
-        int size=10;
-        // speed
-        std::chrono::milliseconds speed_timer = 500ms;
-        Snake snake;
-        Cell food;
-    
-    public:
-        Game(){
-            this->snake = Snake();
-        }
-
-        std::chrono::milliseconds getSpeed(){
-            return this->speed_timer;
-        }
-        int getSize(){
-            return this->size;
-        }
-
-        Cell generate_random_cell(){
-            Cell new_pos = make_pair(rand() % this->getSize(), rand() % this->getSize());
-            while(this->snake.contains(new_pos)){
-                new_pos = make_pair(rand() % this->getSize(), rand() % this->getSize());
-            }
-            return new_pos;
-        }
-
-        bool checkCollission(Cell position){
-            return this->snake.contains(position);
-        }
-
-        void set_direction(char direction){
-            this->snake.set_direction(direction);
-        }
-
-        void render(){
-            for(size_t i=0;i<this->getSize();i++){
-                for(size_t j=0;j<this->getSize();j++){
-                    if (snake.contains(make_pair(int(i), int(j)))) {
-                        cout << "🐍";
-                    }else if (i == this->food.first && j == this->food.second){
-                        cout << "🍎";
-                    }else{
-                        cout << "⬜";
-                    }
-            }
-            cout << endl;
-        }
-        sleep_for(this->getSpeed());
-        }
+    int size=10;
+	
         
-        void update(){
-            // check self collision
-            if (this->checkCollission(this->snake.get_next_position())) {
-                system("clear");
-                cout << "Game Over" << endl;
-                exit(0);
-            }else if (this->snake.contains(food)) {
-                this->food = this->generate_random_cell();
-                this->snake.grow();
-                
-            }else{
-                this->snake.move();
-            }
+	// speed
+    std::chrono::milliseconds speed_timer = 500ms;
+    shared_ptr<InputManager> input_manager;
+
+    public:
+    Snake snake;
+    Cell food;
+    Game(shared_ptr<InputManager> input_manager) : input_manager(input_manager) {
+        this->snake = Snake();
+    }
+
+    std::chrono::milliseconds getSpeed(){
+        return this->speed_timer;
+    }
+    int getSize(){
+        return this->size;
+    }
+
+    Cell generate_random_cell(){
+        Cell new_pos = make_pair(rand() % this->getSize(), rand() % this->getSize());
+        while(this->snake.contains(new_pos)){
+            new_pos = make_pair(rand() % this->getSize(), rand() % this->getSize());
         }
+        return new_pos;
+    }
+
+    bool checkCollission(Cell position){
+        return this->snake.contains(position);
+    }
+
+    void set_direction(char direction){
+        this->snake.set_direction(direction);
+    }
+
+    void render(Cell food){
+        for(size_t i=0;i<this->getSize();i++){
+            for(size_t j=0;j<this->getSize();j++){
+                if (snake.contains(make_pair(int(i), int(j)))) {
+                    cout << "🐍";
+                }else if (i == food.first && j == food.second){
+                    cout << "🍎";
+                }else{
+                    cout << "⬜";
+                }
+        }
+        cout << endl;
+    }
+    sleep_for(this->getSpeed());
+    }
+    
+    shared_ptr<InputManager> getInputManager(){
+        return this->input_manager;
+    }
 };
 
 
-void input_handler(Game& game){
-    // change terminal settings
-    struct termios oldt, newt;
-    tcgetattr(STDIN_FILENO, &oldt);
-    newt = oldt;
-    // turn off canonical mode and echo
-    newt.c_lflag &= ~(ICANON | ECHO);
-    tcsetattr(STDIN_FILENO, TCSANOW, &newt);
-    map<char, char> keymap = {{'d', 'r'}, {'a', 'l'}, {'w', 'u'}, {'s', 'd'}, {'q', 'q'}};
-    while (true) {
-        char input = getchar();
-        if (keymap.find(input) != keymap.end()) {
-            game.set_direction(keymap[input]);
-        }else if (input == 'q'){
-            exit(0);
-        }
-        // You could add an exit condition here, e.g., if (input == 'q') break;
-    }
-    tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
-}
+void handle_single_input(Game& game);
+void input_handler(Game& game);
+void reset_cursor();
+void move_snake(deque<Cell> &snake, Cell new_head);
+void game_play(Game& game);
 
-void reset_cursor(){
-    cout << "\033[H";
-}
-
-
-
-
-void game_play(Game& game){
-    system("clear");
-
-    Cell food = game.generate_random_cell();
-    while(true){
-        reset_cursor();
-        game.update();
-        game.render();
-        
-    }
-}

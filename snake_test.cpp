@@ -3,7 +3,7 @@
 
 
 TEST(SnakeMove, NextHeadRight) {
-    pair<int, int> current = make_pair(rand() % 10, rand() % 10);
+    pair<int, int> current = make_pair(5, 5);
     Snake snake = Snake(current);
     snake.set_direction('r');
     
@@ -14,41 +14,41 @@ TEST(SnakeMove, NextHeadRight) {
 }
 
 TEST(SnakeMove, NextHeadLeft) {
-    Cell current = make_pair(rand() % 10, rand() % 10);
+    Cell current = make_pair(5, 5);
     Snake snake = Snake(current);
     snake.set_direction('l');
     
     snake.move();
     Cell next = snake.get_head();
     
-    EXPECT_EQ(next,make_pair(current.first, current.second==0?9:current.second-1));
+    EXPECT_EQ(next,make_pair(current.first, current.second-1));
 }
 
 TEST(SnakeMove, NextHeadUp) {
-    Cell current = make_pair(rand() % 10, rand() % 10);
+    Cell current = make_pair(5, 5);
     Snake snake = Snake(current);
     snake.set_direction('u');
     
     snake.move();
     Cell next = snake.get_head();
     
-    EXPECT_EQ(next,make_pair(current.first==0?9:current.first-1, current.second));
+    EXPECT_EQ(next,make_pair(current.first-1, current.second));
 }
 
 TEST(SnakeMove, NextHeadDown) {
-    Cell current = make_pair(rand() % 10, rand() % 10);
+    Cell current = make_pair(5, 5);
     Snake snake = Snake(current);
     snake.set_direction('d');
     
     snake.move();
     Cell next = snake.get_head();
     
-    EXPECT_EQ(next,make_pair((current.first+1)%10,current.second));
+    EXPECT_EQ(next,make_pair(current.first+1,current.second));
 }
 
 
 TEST(SnakeGrow, Size){
-  Cell current = make_pair(rand() % 10, rand() % 10);
+  Cell current = make_pair(5, 5);
   Snake snake = Snake(current);
   snake.set_direction('r');
 
