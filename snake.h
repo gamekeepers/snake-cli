@@ -144,17 +144,17 @@ class Snake{
 class Game{
     private:
     int size=10;
-	
-        
-	// speed
-    std::chrono::milliseconds speed_timer = 500ms;
+	Cell food;
+	Snake snake;
+    // speed
+    std::chrono::milliseconds speed_timer = 200ms;
     shared_ptr<InputManager> input_manager;
 
     public:
-    Snake snake;
-    Cell food;
+    
     Game(shared_ptr<InputManager> input_manager) : input_manager(input_manager) {
         this->snake = Snake();
+        this->food = this->generate_random_cell();
     }
 
     std::chrono::milliseconds getSpeed(){
@@ -180,12 +180,27 @@ class Game{
         this->snake.set_direction(direction);
     }
 
-    void render(Cell food){
+    void update(){
+        // check self collision
+        if (this->checkCollission(this->snake.get_next_position())) {
+            system("clear");
+            cout << "Game Over" << endl;
+            exit(0);
+        }else if (this->snake.contains(food)) {
+            this->food = this->generate_random_cell();
+            this->snake.grow();
+            
+        }else{
+            this->snake.move();
+        }
+    }
+
+    void render(){
         for(size_t i=0;i<this->getSize();i++){
             for(size_t j=0;j<this->getSize();j++){
                 if (snake.contains(make_pair(int(i), int(j)))) {
                     cout << "🐍";
-                }else if (i == food.first && j == food.second){
+                }else if (i == this->food.first && j == this->food.second){
                     cout << "🍎";
                 }else{
                     cout << "⬜";

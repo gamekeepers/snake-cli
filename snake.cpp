@@ -28,24 +28,11 @@ void move_snake(deque<Cell> &snake, Cell new_head){
 void game_play(Game& game){
     system("clear");
 
-    Cell food = game.generate_random_cell();
     game.set_direction('r');
     while(true){
         reset_cursor();
-        // check self collision
-        if (game.checkCollission(game.snake.get_next_position())) {
-            system("clear");
-            cout << "Game Over" << endl;
-            exit(0);
-        }else if (game.snake.contains(food)) {
-            food = game.generate_random_cell();
-            game.snake.grow();
-            
-        }else{
-            game.snake.move();
-        }
-
-        game.render(food);
+        game.update();
+        game.render();
         
     }
 }
