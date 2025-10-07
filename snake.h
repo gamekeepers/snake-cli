@@ -8,94 +8,203 @@
 #include <map>
 #include <deque>
 #include <algorithm>
+#include <memory>
+
 using namespace std;
 using std::chrono::system_clock;
 using namespace std::this_thread;
-char direction='r';
 
+typedef pair<int, int> Cell;
 
-void input_handler(){
-    // change terminal settings
-    struct termios oldt, newt;
-    tcgetattr(STDIN_FILENO, &oldt);
-    newt = oldt;
-    // turn off canonical mode and echo
-    newt.c_lflag &= ~(ICANON | ECHO);
-    tcsetattr(STDIN_FILENO, TCSANOW, &newt);
-    map<char, char> keymap = {{'d', 'r'}, {'a', 'l'}, {'w', 'u'}, {'s', 'd'}, {'q', 'q'}};
-    while (true) {
-        char input = getchar();
-        if (keymap.find(input) != keymap.end()) {
-            // This now correctly modifies the single, shared 'direction' variable
-            direction = keymap[input];
-        }else if (input == 'q'){
-            exit(0);
-        }
-        // You could add an exit condition here, e.g., if (input == 'q') break;
+class InputManager {
+public:
+    virtual ~InputManager() {}
+    virtual char getInput() = 0;
+};
+
+class KeyboardInputManager : public InputManager {
+public:
+    KeyboardInputManager() {
+        struct termios oldt, newt;
+        tcgetattr(STDIN_FILENO, &oldt);
+        newt = oldt;
+        newt.c_lflag &= ~(ICANON | ECHO);
+        tcsetattr(STDIN_FILENO, TCSANOW, &newt);
     }
-    tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
-}
 
+    ~KeyboardInputManager() {
+        struct termios oldt;
+        tcgetattr(STDIN_FILENO, &oldt);
+        oldt.c_lflag |= (ICANON | ECHO);
+        tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+    }
 
-void render_game(int size, deque<pair<int, int>> &snake, pair<int, int> food){
-    for(size_t i=0;i<size;i++){
-        for(size_t j=0;j<size;j++){
-            if (i == food.first && j == food.second){
-                cout << "🍎";
-            }else if (find(snake.begin(), snake.end(), make_pair(int(i), int(j))) != snake.end()) {
-                cout << "🐍";
-            }else{
-                cout << "⬜";
+    char getInput() override {
+        return getchar();
+    }
+};
+
+class MockInputManager : public InputManager {
+private:
+    char next_input;
+public:
+    char getInput() override {
+        return next_input;
+    }
+    void setNextInput(char input) {
+        next_input = input;
+    }
+};
+
+class Snake{
+    private:
+        deque<Cell> body;
+        int size=0;
+        char direction = 'x';
+    public:
+    // default constructor
+    Snake(){
+        this->body.push_back(make_pair(0,0));
+    }
+
+    // constructor with default position
+    Snake(Cell position){
+        this->body.push_back(position);
+    }
+
+    int getSize(){
+        return this->body.size();
+    }
+    void grow(){
+        Cell new_head = this->get_next_position();
+        this->body.push_back(new_head);
+    }
+
+    void move(){
+        Cell new_head = this->get_next_position();
+        this->body.push_back(new_head);
+        this->body.pop_front();
+    }
+
+    void print_snake(){
+        for(Cell cell: this->body){
+            cout << cell.first << "," << cell.second << ">>";
+        }
+        cout << endl;
+    }
+    bool contains(Cell position){
+        return find(this->body.begin(), this->body.end(), position) != this->body.end();
+    }
+
+    void set_direction(char direction){
+        if (direction != 'r' && direction != 'l' && direction != 'u' && direction != 'd'){
+            return;
+        }else if(direction == this->direction){
+            
+        }else if(direction == 'r' && this->direction == 'l'){
+            return;
+        }else if (direction == 'l' && this->direction == 'r'){
+            return;
+        }else if (direction == 'u' && this->direction == 'd'){
+            return;
+        }else if (direction == 'd' && this->direction == 'u'){
+            return;
+        }
+
+        this->direction = direction;
+    }
+
+    char get_direction(){
+        return this->direction;
+    }
+
+    Cell get_head(){
+        return this->body.back();
+    }
+
+    Cell get_next_position(){
+        Cell current = this->get_head();
+        Cell next; 
+        if(this->direction =='r'){
+            next = make_pair(current.first,(current.second+1) % 10);
+        }else if (this->direction=='l')
+        {
+            next = make_pair(current.first, current.second==0?9:current.second-1);
+        }else if(this->direction =='d'){
+                next = make_pair((current.first+1)%10,current.second);
+            }else if (this->direction=='u'){
+                next = make_pair(current.first==0?9:current.first-1, current.second);
             }
+        return next;
+        
     }
-    cout << endl;
-}
-}
-
-pair<int,int> get_next_head(pair<int,int> current, char direction){
-    pair<int, int> next; 
-    if(direction =='r'){
-        next = make_pair(current.first,(current.second+1) % 10);
-    }else if (direction=='l')
-    {
-        next = make_pair(current.first, current.second==0?9:current.second-1);
-    }else if(direction =='d'){
-            next = make_pair((current.first+1)%10,current.second);
-        }else if (direction=='u'){
-            next = make_pair(current.first==0?9:current.first-1, current.second);
-        }
-    return next;
     
-}
+};
 
+class Game{
+    private:
+    int size=10;
+	
+        
+	// speed
+    std::chrono::milliseconds speed_timer = 500ms;
+    shared_ptr<InputManager> input_manager;
 
-
-void game_play(){
-    system("clear");
-    deque<pair<int, int>> snake;
-    snake.push_back(make_pair(0,0));
-
-    pair<int, int> food = make_pair(rand() % 10, rand() % 10);
-    for(pair<int, int> head=make_pair(0,1);; head = get_next_head(head, direction)){
-        // send the cursor to the top
-        cout << "\033[H";
-        // check self collision
-        if (find(snake.begin(), snake.end(), head) != snake.end()) {
-            system("clear");
-            cout << "Game Over" << endl;
-            exit(0);
-        }else if (head.first == food.first && head.second == food.second) {
-            // grow snake
-            food = make_pair(rand() % 10, rand() % 10);
-            snake.push_back(head);            
-        }else{
-            // move snake
-            snake.push_back(head);
-            snake.pop_front();
-        }
-        render_game(10, snake, food);
-        cout << "length of snake: " << snake.size() << endl;
-    
-        sleep_for(500ms);
+    public:
+    Snake snake;
+    Cell food;
+    Game(shared_ptr<InputManager> input_manager) : input_manager(input_manager) {
+        this->snake = Snake();
     }
-}
+
+    std::chrono::milliseconds getSpeed(){
+        return this->speed_timer;
+    }
+    int getSize(){
+        return this->size;
+    }
+
+    Cell generate_random_cell(){
+        Cell new_pos = make_pair(rand() % this->getSize(), rand() % this->getSize());
+        while(this->snake.contains(new_pos)){
+            new_pos = make_pair(rand() % this->getSize(), rand() % this->getSize());
+        }
+        return new_pos;
+    }
+
+    bool checkCollission(Cell position){
+        return this->snake.contains(position);
+    }
+
+    void set_direction(char direction){
+        this->snake.set_direction(direction);
+    }
+
+    void render(Cell food){
+        for(size_t i=0;i<this->getSize();i++){
+            for(size_t j=0;j<this->getSize();j++){
+                if (snake.contains(make_pair(int(i), int(j)))) {
+                    cout << "🐍";
+                }else if (i == food.first && j == food.second){
+                    cout << "🍎";
+                }else{
+                    cout << "⬜";
+                }
+        }
+        cout << endl;
+    }
+    sleep_for(this->getSpeed());
+    }
+    
+    shared_ptr<InputManager> getInputManager(){
+        return this->input_manager;
+    }
+};
+
+
+void handle_single_input(Game& game);
+void input_handler(Game& game);
+void reset_cursor();
+void move_snake(deque<Cell> &snake, Cell new_head);
+void game_play(Game& game);
+

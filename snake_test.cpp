@@ -2,29 +2,61 @@
 #include "snake.h"
 
 
-TEST(SnakeBehaviour, NextHeadRight) {
-    pair<int, int> current = make_pair(rand() % 10, rand() % 10);
-    EXPECT_EQ(get_next_head(current, 'r'),make_pair(current.first,current.second+1));
+TEST(SnakeMove, NextHeadRight) {
+    pair<int, int> current = make_pair(5, 5);
+    Snake snake = Snake(current);
+    snake.set_direction('r');
     
+    snake.move();
+    Cell next = snake.get_head();
+    
+    EXPECT_EQ(next,make_pair(current.first,current.second+1));
+}
+
+TEST(SnakeMove, NextHeadLeft) {
+    Cell current = make_pair(5, 5);
+    Snake snake = Snake(current);
+    snake.set_direction('l');
+    
+    snake.move();
+    Cell next = snake.get_head();
+    
+    EXPECT_EQ(next,make_pair(current.first, current.second-1));
+}
+
+TEST(SnakeMove, NextHeadUp) {
+    Cell current = make_pair(5, 5);
+    Snake snake = Snake(current);
+    snake.set_direction('u');
+    
+    snake.move();
+    Cell next = snake.get_head();
+    
+    EXPECT_EQ(next,make_pair(current.first-1, current.second));
+}
+
+TEST(SnakeMove, NextHeadDown) {
+    Cell current = make_pair(5, 5);
+    Snake snake = Snake(current);
+    snake.set_direction('d');
+    
+    snake.move();
+    Cell next = snake.get_head();
+    
+    EXPECT_EQ(next,make_pair(current.first+1,current.second));
 }
 
 
-TEST(SnakeBehaviour, NextHeadLeft) {
-  pair<int, int> current = make_pair(rand() % 10, rand() % 10);
-  EXPECT_EQ(get_next_head(current, 'l'),make_pair(current.first,current.second-1));
+TEST(SnakeGrow, Size){
+  Cell current = make_pair(5, 5);
+  Snake snake = Snake(current);
+  snake.set_direction('r');
+
+  snake.grow();
   
+  EXPECT_EQ(snake.getSize(),2);
 }
 
-TEST(SnakeBehaviour, NextHeadUp) {
-  pair<int, int> current = make_pair(rand() % 10, rand() % 10);
-  EXPECT_EQ(get_next_head(current, 'u'),make_pair(current.first-1,current.second));
-}
-
-TEST(SnakeBehaviour, NextHeadDown) {
-  pair<int, int> current = make_pair(rand() % 10, rand() % 10);
-  EXPECT_EQ(get_next_head(current, 'd'),make_pair(current.first+1,current.second));
-  
-}
 
 
 /** 

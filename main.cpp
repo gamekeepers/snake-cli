@@ -1,9 +1,12 @@
 #include "snake.h"
 
 int main(int argc, char *argv[]) {
-    thread input_thread(input_handler);
-    thread game_thread(game_play);   
+    shared_ptr<InputManager> input_manager = make_shared<KeyboardInputManager>();
+    Game game = Game(input_manager);
+
+    thread input_thread(input_handler, std::ref(game));
+    thread game_thread(game_play, std::ref(game));   
     input_thread.join();
     game_thread.join();
-return 0;
+    return 0;
 }
