@@ -149,6 +149,10 @@ class Game{
     // speed
     std::chrono::milliseconds speed_timer = 200ms;
     shared_ptr<InputManager> input_manager;
+    int score = 0;
+    int difficulty = 1; // 1=easy, 2=medium, 3=hard
+    bool paused = false;
+    bool game_over = false;
 
     public:
     
@@ -156,12 +160,49 @@ class Game{
         this->snake = Snake();
         this->food = this->generate_random_cell();
     }
+    
+    Game(shared_ptr<InputManager> input_manager, int difficulty) : input_manager(input_manager), difficulty(difficulty) {
+        this->snake = Snake();
+        this->food = this->generate_random_cell();
+        setDifficulty(difficulty);
+    }
 
     std::chrono::milliseconds getSpeed(){
         return this->speed_timer;
     }
     int getSize(){
         return this->size;
+    }
+    
+    int getScore(){
+        return this->score;
+    }
+    
+    void setDifficulty(int diff){
+        this->difficulty = diff;
+        if(diff == 1) this->speed_timer = 200ms; // Easy
+        else if(diff == 2) this->speed_timer = 100ms; // Medium
+        else if(diff == 3) this->speed_timer = 50ms; // Hard
+    }
+    
+    int getDifficulty(){
+        return this->difficulty;
+    }
+    
+    void togglePause(){
+        this->paused = !this->paused;
+    }
+    
+    bool isPaused(){
+        return this->paused;
+    }
+    
+    bool isGameOver(){
+        return this->game_over;
+    }
+    
+    void setGameOver(){
+        this->game_over = true;
     }
 
     Cell generate_random_cell(){
@@ -184,14 +225,16 @@ class Game{
         return this->snake.get_direction();
     }
     void update(){
+        if(this->paused) return;
+        
         // check self collision
         if (this->checkCollission(this->snake.get_next_position())) {
-            system("clear");
-            cout << "Game Over" << endl;
-            exit(0);
+            this->game_over = true;
+            return;
         }else if (this->snake.contains(food)) {
             this->food = this->generate_random_cell();
             this->snake.grow();
+            this->score += (10 * this->difficulty); // Higher difficulty = more points
             
         }else{
             this->snake.move();
@@ -199,6 +242,17 @@ class Game{
     }
 
     void render(){
+        // Display score and info
+        cout << "Score: " << this->score << " | Length: " << this->snake.getSize() << " | Difficulty: ";
+        if(this->difficulty == 1) cout << "Easy";
+        else if(this->difficulty == 2) cout << "Medium";
+        else cout << "Hard";
+        
+        if(this->paused) cout << " | PAUSED";
+        cout << endl;
+        cout << "Controls: WASD=Move, P=Pause, Q=Quit" << endl;
+        cout << "───────────────────────" << endl;
+        
         for(size_t i=0;i<this->getSize();i++){
             for(size_t j=0;j<this->getSize();j++){
                 if (snake.contains(make_pair(int(i), int(j)))) {
@@ -225,4 +279,5 @@ void input_handler(Game& game);
 void reset_cursor();
 void move_snake(deque<Cell> &snake, Cell new_head);
 void game_play(Game& game);
+bool display_game_over(Game& game);
 

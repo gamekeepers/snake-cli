@@ -9,6 +9,12 @@ A classic snake game implemented in C++.
 *   Threaded input and game logic
 *   Unit tests using Google Test framework
 
+- **Three difficulty levels**: Easy, Medium, and Hard (affects speed and score multiplier)
+- **Score tracking**: Earn points based on difficulty (Easy: 10pts, Medium: 20pts, Hard: 30pts per food)
+- **Pause functionality**: Press 'P' to pause/resume the game
+- **Clean game over screen**: Shows final score, snake length, and difficulty
+- **Real-time stats display**: Score, length, and difficulty shown during gameplay
+
 ## Getting Started
 
 ### Prerequisites
@@ -43,7 +49,13 @@ This will create two executables in the `build` directory: `snake_game` and `sna
 To play the game, run the following command from the `build` directory:
 
 ```bash
-./snake_game
+g++ -o snake main.cpp snake.cpp -pthread
+./snake
+```
+
+You can also specify difficulty via command line (1=Easy, 2=Medium, 3=Hard):
+```bash
+./snake 2  # Start with Medium difficulty
 ```
 
 ### Running Tests
@@ -51,7 +63,8 @@ To play the game, run the following command from the `build` directory:
 To run the tests, execute the following command from the `build` directory:
 
 ```bash
-./snake_tests
+g++ -o snake_tests snake_test.cpp snake_input_test.cpp snake.cpp  -lgtest -lgtest_main -pthread
+./my_tests
 ```
 
 ## How to Play
