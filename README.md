@@ -10,6 +10,6 @@ g++ -o snake main.cpp -pthread;
 
 ## Run Tests
 ```bash
-g++ -o my_tests snake_test.cpp -lgtest -lgtest_main -pthread;
+g++ -o my_tests snake_test.cpp snake_input_test.cpp snake.cpp  -lgtest -lgtest_main -pthread;
 ./my_tests
 ```

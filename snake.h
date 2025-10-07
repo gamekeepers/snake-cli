@@ -180,6 +180,9 @@ class Game{
         this->snake.set_direction(direction);
     }
 
+    char get_direction(){
+        return this->snake.get_direction();
+    }
     void update(){
         // check self collision
         if (this->checkCollission(this->snake.get_next_position())) {
