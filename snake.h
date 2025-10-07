@@ -144,13 +144,14 @@ class Snake{
 class Game{
     private:
     int size=10;
-    // speed
+	Snake snake;
+    Cell food;
+        
+	// speed
     std::chrono::milliseconds speed_timer = 500ms;
     shared_ptr<InputManager> input_manager;
 
     public:
-    Snake snake;
-    Cell food;
     Game(shared_ptr<InputManager> input_manager) : input_manager(input_manager) {
         this->snake = Snake();
     }
